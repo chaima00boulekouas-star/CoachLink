@@ -6,7 +6,7 @@ import Store from "../models/Store.Model.js";
 // @access  Private (Coach only)
 export const addProduct = async (req, res) => {
   try {
-    const { title, description, category, price, type, stock, images } = req.body;
+    const { title, description, category, price, type, stock } = req.body;
     const coachId = req.user.id;
 
     if (!title || price === undefined || !type) {
@@ -17,23 +17,28 @@ export const addProduct = async (req, res) => {
       return res.status(400).json({ message: "Price cannot be negative." });
     }
 
-    // First, verify that the coach has an active store
     const store = await Store.findOne({ coach: coachId });
     if (!store) {
       return res.status(404).json({ message: "Store not found. Please create a store first." });
     }
 
-    // Create the product linked to the specific store and coach
+    // --- MULTER LOGIC: Handle uploaded images ---
+    let imagesPaths = [];
+    if (req.files && req.files.length > 0) {
+      // Loop through uploaded files and extract their paths
+      imagesPaths = req.files.map((file) => file.path);
+    }
+
     const newProduct = new Product({
       store: store._id,
       coach: coachId,
       title,
       description,
-      category, // Ensure the frontend sends a valid Category ID
+      category,
       price,
-      images,
-      type, // Must be one of: "physical", "digital", "program"
-      stock: type === "physical" ? stock : 0, // Stock is only relevant for physical items
+      images: imagesPaths, // <-- Use the array of file paths here
+      type,
+      stock: type === "physical" ? stock : 0,
     });
 
     await newProduct.save();
@@ -54,7 +59,7 @@ export const addProduct = async (req, res) => {
 export const getProducts = async (req, res) => {
   try {
     const products = await Product.find({ store: req.params.storeId, isActive: true })
-      .populate('category', 'name'); // Assuming Category model has a 'name'
+      .populate('category', 'name'); 
       
     res.status(200).json({ count: products.length, products });
   } catch (error) {
@@ -87,7 +92,7 @@ export const getProductById = async (req, res) => {
 // @access  Private (Coach only)
 export const updateProduct = async (req, res) => {
   try {
-    const { title, description, category, price, type, stock, images, isActive } = req.body;
+    const { title, description, category, price, type, stock, isActive } = req.body;
     const coachId = req.user.id;
 
     let product = await Product.findById(req.params.id);
@@ -96,7 +101,6 @@ export const updateProduct = async (req, res) => {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    // Verify the logged-in coach owns this product
     if (product.coach.toString() !== coachId) {
       return res.status(401).json({ message: "Not authorized to update this product" });
     }
@@ -105,9 +109,15 @@ export const updateProduct = async (req, res) => {
       return res.status(400).json({ message: "Price cannot be negative." });
     }
 
+    // --- MULTER LOGIC: Handle new uploaded images ---
+    let imagesPaths = product.images; // Keep old images by default
+    if (req.files && req.files.length > 0) {
+      imagesPaths = req.files.map((file) => file.path); // Replace with new ones if provided
+    }
+
     product = await Product.findByIdAndUpdate(
       req.params.id,
-      { $set: { title, description, category, price, type, stock, images, isActive } },
+      { $set: { title, description, category, price, type, stock, images: imagesPaths, isActive } },
       { new: true }
     );
 
