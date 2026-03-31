@@ -1,11 +1,25 @@
 import multer from "multer";
 import path from "path";
+import fs from "fs";
+import { fileURLToPath } from "url";
+
+// Resolving the absolute path since we are in ES Modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// The directory will be backend/uploads (this file is inside backend/src/middlewares)
+const uploadDir = path.join(__dirname, '../../uploads');
+
+// Ensure the uploads directory exists before saving files
+if (!fs.existsSync(uploadDir)){
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
 
 // 1. Storage Configuration
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    // Save files to the "uploads" directory
-    cb(null, "uploads/");
+    // Save files to the dynamically resolved uploads directory
+    cb(null, uploadDir);
   },
   filename: function (req, file, cb) {
     // Create a unique file name to avoid overwriting: timestamp-randomNum-originalName
