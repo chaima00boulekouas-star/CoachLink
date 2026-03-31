@@ -1,5 +1,5 @@
-import Product from "../models/Product.Model.js";
-import Store from "../models/Store.Model.js";
+import Product from "../Models/Product.Model.js";
+import Store from "../Models/Store.Model.js";
 
 // @desc    Add a new product to the coach's store
 // @route   POST /api/products

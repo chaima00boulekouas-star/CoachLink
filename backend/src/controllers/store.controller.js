@@ -1,4 +1,4 @@
-import Store from "../models/Store.Model.js";
+import Store from "../Models/Store.Model.js";
 
 // @desc    Create a new store for the logged-in coach
 // @route   POST /api/stores
