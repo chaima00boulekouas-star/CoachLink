@@ -1,4 +1,4 @@
-import CoachProfile from "../models/Coach.Model.js";
+import CoachProfile from "../Models/Coach.Model.js";
 
 // @desc    Create or update the coach profile
 // @route   POST /api/coach-profiles

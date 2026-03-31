@@ -1,6 +1,6 @@
-import Review from "../models/Review.Model.js";
-import CoachProfile from "../models/Coach.Model.js";
-import User from "../models/User.Model.js";
+import Review from "../Models/Review.Model.js";
+import CoachProfile from "../Models/Coach.Model.js";
+import User from "../Models/User.Model.js";
 
 // @desc    Create a new review for a coach
 // @route   POST /api/reviews/coach/:coachId
