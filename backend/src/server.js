@@ -36,6 +36,14 @@ app.get('/', (req, res) => {
 // app.use('/api/stores', storeRoutes);
 // app.use('/api/products', productRoutes);
 // app.use('/api/orders', orderRoutes);
+import routes from "./Routes/index.js";
+
+// For payment webhooks some providers require the raw body for signature verification.
+// Mount a raw parser specifically for the webhook endpoint before the routes.
+app.use('/api/payments/webhook', express.raw({ type: '*/*' }));
+
+// Mount API routers
+app.use('/', routes);
 
 // Database Connection & Server Setup
 const PORT = process.env.PORT || 5000;

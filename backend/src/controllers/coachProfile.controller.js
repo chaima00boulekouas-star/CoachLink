@@ -1,5 +1,9 @@
 import CoachProfile from "../Models/Coach.Model.js";
 
+
+//add get All coaches and delete coach profile
+
+
 // @desc    Create or update the coach profile
 // @route   POST /api/coach-profiles
 // @access  Private (Coach only)
