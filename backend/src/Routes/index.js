@@ -9,6 +9,7 @@ import sessionRoutes from "./SessionRoutes.js";
 import reviewRoutes from "./ReviewRoutes.js";
 import paymentRoutes from "./PaymentRoutes.js";
 import dashboardRoutes from "./DashboardRoutes.js";
+import userRoutes from "./UserRoutes.js";
 
 const router = express.Router();
 
@@ -20,5 +21,6 @@ router.use("/api/sessions", sessionRoutes);
 router.use("/api/reviews", reviewRoutes);
 router.use("/api/payments", paymentRoutes);
 router.use("/api/dashboard", dashboardRoutes);
+router.use("/api/users", userRoutes);
 
 export default router;
