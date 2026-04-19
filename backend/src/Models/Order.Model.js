@@ -104,8 +104,6 @@ const orderSchema = new mongoose.Schema(
 
 orderSchema.index({ user: 1, status: 1 });
 
-orderSchema.index({ "items.store": 1 });
-
 orderSchema.index({ createdAt: -1 });
 
 export default mongoose.model("Order", orderSchema);

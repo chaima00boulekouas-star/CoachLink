@@ -4,7 +4,7 @@ import express from "express";
 import {
   manageCoachProfile,
   getCoachProfile,
-} from "../Controllers/coachProfile.controller.js";
+} from "../controllers/coachProfile.controller.js";
 
 import { protect  } from "../middlewares/Auth.Middleware.js";
 import { isCoach , isAdmin ,  } from "../middlewares/Role.Middleware.js";

@@ -15,7 +15,13 @@ dotenv.config();
 const app = express();
 
 // Middleware
-app.use(express.json()); // Parses incoming JSON requests
+app.use(express.json({
+  verify: (req, res, buf) => {
+    if (req.originalUrl.startsWith('/api/payments/webhook')) {
+      req.rawBody = buf.toString();
+    }
+  }
+})); // Parses incoming JSON requests and conditionally captures raw body
 app.use(express.urlencoded({ extended: true })); // Parses URL-encoded data
 
 // Securely serve static files from the backend/uploads directory using absolute path
@@ -32,15 +38,7 @@ app.get('/', (req, res) => {
   res.status(200).json({ message: 'CoachLink API is running...' });
 });
 
-// Routes will be mounted here shortly once they are created
-// app.use('/api/stores', storeRoutes);
-// app.use('/api/products', productRoutes);
-// app.use('/api/orders', orderRoutes);
-import routes from "./Routes/index.js";
-
-// For payment webhooks some providers require the raw body for signature verification.
-// Mount a raw parser specifically for the webhook endpoint before the routes.
-app.use('/api/payments/webhook', express.raw({ type: '*/*' }));
+import routes from "./routes/index.js";
 
 // Mount API routers
 app.use('/', routes);

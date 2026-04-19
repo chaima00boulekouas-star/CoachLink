@@ -7,7 +7,7 @@ import {
   getCoachOrders,
   getOrderById,
   updateOrderStatus
-} from "../Controllers/order.controller.js";
+} from "../controllers/order.controller.js";
 
 import { protect } from "../middlewares/Auth.Middleware.js";
 import { isCoach, isAdmin , isTrainee} from "../middlewares/Role.Middleware.js";

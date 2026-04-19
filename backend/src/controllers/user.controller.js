@@ -2,7 +2,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import User from '../Models/User.Model.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'change_this_secret';
+
 
 export const createUser = async (req, res) => {
   try {
@@ -18,7 +18,7 @@ export const createUser = async (req, res) => {
     const user = new User({ name, email, password: hashed, role });
     await user.save();
 
-    const token = jwt.sign({ id: user._id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ id: user._id, email: user.email, role: user.role }, process.env.JWT_SECRET || 'change_this_secret', { expiresIn: '7d' });
 
     res.status(201).json({ user: { id: user._id, name: user.name, email: user.email, role: user.role }, token });
   } catch (err) {
@@ -37,7 +37,7 @@ export const login = async (req, res) => {
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(401).json({ message: 'Invalid credentials' });
 
-    const token = jwt.sign({ id: user._id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ id: user._id, email: user.email, role: user.role }, process.env.JWT_SECRET || 'change_this_secret', { expiresIn: '7d' });
 
     res.json({ user: { id: user._id, name: user.name, email: user.email, role: user.role }, token });
   } catch (err) {

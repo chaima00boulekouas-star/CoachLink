@@ -82,8 +82,8 @@ export const webhookReceiver = async (req, res) => {
     // 1. Get the signature sent by Chargily from the headers
     const signature = req.headers["signature"];
     
-    // We convert the body to a string to verify it (Note: for absolute safety in production, express.raw() is used in routes)
-    const payload = JSON.stringify(req.body); 
+    // We use the raw body captured in server.js to verify it exactly as it came over the network
+    const payload = req.rawBody || JSON.stringify(req.body); 
 
     // 2. Verify Security: Make sure the request is REALLY from Chargily, not a hacker
     const secret = process.env.CHARGILY_SECRET_KEY;
