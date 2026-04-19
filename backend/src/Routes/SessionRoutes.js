@@ -4,7 +4,7 @@ import {
   getCoachSessions,
   getTraineeSessions,
   updateSessionStatus,
-} from "../Controllers/session.controller.js";
+} from "../controllers/session.controller.js";
 import { protect } from "../middlewares/Auth.Middleware.js";
 import { isCoach, isTrainee } from "../middlewares/Role.Middleware.js";
 const router = express.Router();

@@ -6,7 +6,7 @@ import {
   getUserById,
   updateUser,
   deleteUser,
-} from '../Controllers/user.controller.js';
+} from '../controllers/user.controller.js';
 
 import { protect } from '../middlewares/Auth.Middleware.js';
 import { isAdmin } from '../middlewares/Role.Middleware.js';
