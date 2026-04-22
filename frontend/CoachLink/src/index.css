@@ -1,0 +1,81 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+@import "tailwindcss";
+
+@variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-primary-blue: #5850EC;
+  --color-primary-orange: #EF5A3D;
+  --color-dark-bg: #111122;
+  --color-dark-card: #1A1A2E;
+  --color-dark-border: #2D2D4D;
+  --color-light-bg: #FFFFFF;
+  --color-light-secondary: #F9FAFB;
+  --color-light-border: #E5E7EB;
+
+  --font-sans: "Inter", system-ui, sans-serif;
+  
+  --shadow-premium: 0 10px 30px -10px rgba(0, 0, 0, 0.1);
+  --shadow-premium-dark: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+  
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-3xl: 2rem;
+}
+
+@layer base {
+  body {
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    @apply text-slate-900 transition-colors duration-300;
+  }
+  
+  .dark body {
+    background-color: var(--color-dark-bg);
+    @apply text-white;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply px-6 py-2.5 rounded-xl font-semibold transition-all duration-300 active:scale-95 flex items-center justify-center;
+  }
+  
+  .btn-primary-blue {
+    background-color: var(--color-primary-blue);
+    @apply text-white shadow-lg;
+    &:hover {
+      opacity: 0.9;
+    }
+  }
+  
+  .btn-primary-orange {
+    background-color: var(--color-primary-orange);
+    @apply text-white shadow-lg;
+    &:hover {
+      opacity: 0.9;
+    }
+  }
+  
+  .btn-outline {
+    @apply border-2 border-slate-200 text-slate-700;
+    &:hover {
+      @apply bg-slate-50;
+    }
+  }
+  
+  .dark .btn-outline {
+    border-color: var(--color-dark-border);
+    @apply text-slate-300;
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.05);
+    }
+  }
+
+  .card-glass {
+    background-color: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+}
