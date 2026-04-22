@@ -1,0 +1,204 @@
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Plus, Filter, ChevronDown, Edit2, Trash2, Eye, CheckCircle, XCircle } from 'lucide-react';
+import DashboardLayout from '../components/DashboardLayout';
+
+const FILTERS = ['All', 'Training Programs', 'Video Courses', 'Equipment', 'Nutrition Guides', 'Mental Training'];
+
+const BADGE_STYLES = {
+  POPULAR: 'bg-slate-900 text-white',
+  SALE: 'bg-primary-orange text-white',
+  NEW: 'bg-primary-blue text-white',
+};
+
+const initialProducts = [
+  { id: 1, title: '12-Week Basketball Training Program', trainer: 'TED LASSO', price: '$299', badge: 'POPULAR', category: 'Training Programs', image: 'https://images.unsplash.com/photo-1546519638405-a2c5ba50a55b?auto=format&fit=crop&q=80&w=400' },
+  { id: 2, title: 'Elite Defense Masterclass', trainer: 'TED LASSO', price: '$149', originalPrice: '$180', badge: 'SALE', category: 'Video Courses', image: 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=400' },
+  { id: 3, title: 'Premium Athlete Equipment Bundle', trainer: 'TED LASSO', price: '$399', badge: 'NEW', category: 'Equipment', image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=400' },
+  { id: 4, title: 'Sports Nutrition & Meal Planning Guide', trainer: 'TED LASSO', price: '$79', badge: null, category: 'Nutrition Guides', image: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&q=80&w=400' },
+  { id: 5, title: 'Mental Performance & Winning Mindset', trainer: 'TED LASSO', price: '$129', badge: 'POPULAR', category: 'Mental Training', image: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&q=80&w=400' },
+  { id: 6, title: 'Speed & Agility Accelerator', trainer: 'TED LASSO', price: '$189', badge: 'NEW', category: 'Training Programs', image: 'https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?auto=format&fit=crop&q=80&w=400' },
+];
+
+const ProductCard = ({ product, onDelete }) => {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, scale: 0.97 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      className="group relative bg-white dark:bg-dark-card rounded-2xl border border-slate-100 dark:border-dark-border overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+    >
+      {/* Image */}
+      <div className="relative aspect-[4/3] overflow-hidden bg-slate-200 dark:bg-dark-border">
+        <img src={product.image} alt={product.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+
+        {/* Badge */}
+        {product.badge && (
+          <span className={`absolute top-2 left-2 text-[10px] font-black px-2 py-0.5 rounded ${BADGE_STYLES[product.badge]}`}>
+            {product.badge}
+          </span>
+        )}
+
+        {/* Hover overlay */}
+        <AnimatePresence>
+          {hovered && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center gap-2"
+            >
+              <Link to={`/store/product/${product.id}`}>
+                <button className="bg-white text-slate-900 text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors">
+                  VIEW PRODUCT
+                </button>
+              </Link>
+              <div className="flex gap-2">
+                <Link to={`/store/product/${product.id}/edit`}>
+                  <button className="bg-white/20 backdrop-blur text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-white/30 border border-white/30 transition-colors">
+                    Edit
+                  </button>
+                </Link>
+                <button
+                  onClick={() => onDelete(product.id)}
+                  className="bg-primary-orange/90 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-primary-orange transition-colors"
+                >
+                  Delete
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Info */}
+      <div className="p-3">
+        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-wider mb-1">{product.trainer}</p>
+        <Link to={`/store/product/${product.id}`}>
+          <h3 className="text-sm font-bold text-slate-900 dark:text-white hover:text-primary-blue dark:hover:text-primary-blue transition-colors leading-snug line-clamp-2 mb-1">
+            {product.title}
+          </h3>
+        </Link>
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-black text-slate-900 dark:text-white">{product.price}</span>
+          {product.originalPrice && (
+            <span className="text-xs text-slate-400 line-through">{product.originalPrice}</span>
+          )}
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+const MyStore = () => {
+  const [activeFilter, setActiveFilter] = useState('All');
+  const [products, setProducts] = useState(initialProducts);
+
+  const filtered = activeFilter === 'All' ? products : products.filter(p => p.category === activeFilter);
+
+  const handleDelete = (id) => {
+    if (confirm('Delete this product?')) {
+      setProducts(prev => prev.filter(p => p.id !== id));
+    }
+  };
+
+  return (
+    <DashboardLayout>
+      {/* Status Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 bg-white dark:bg-dark-card rounded-xl px-4 py-3 border border-slate-100 dark:border-dark-border shadow-sm">
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-green-600 dark:text-green-400">
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+            Store Active
+          </div>
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-green-600 dark:text-green-400">
+            <CheckCircle size={13} />
+            <span className="hidden sm:inline">Subscription Active · </span>Next billing: May 8, 2026
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <Link to="/store/new-product">
+            <button className="flex items-center gap-1.5 text-xs font-bold text-primary-blue border border-primary-blue px-3 py-1.5 rounded-lg hover:bg-primary-blue hover:text-white transition-all">
+              <Plus size={14} /> Add Product
+            </button>
+          </Link>
+          <button className="text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap">
+            Cancel Subscription
+          </button>
+        </div>
+      </div>
+
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500 mb-4">
+        <Link to="/dashboard" className="hover:text-primary-blue transition-colors font-semibold">HOME</Link>
+        <span>›</span>
+        <span className="text-slate-600 dark:text-slate-300 font-bold">STORE</span>
+      </nav>
+
+      <div className="flex items-end justify-between mb-6">
+        <h1 className="text-3xl sm:text-5xl font-black text-slate-900 dark:text-white tracking-tight">MY STORE</h1>
+        <span className="text-sm text-slate-400">{products.length} products</span>
+      </div>
+
+      {/* Filter Bar */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+          <div className="flex items-center gap-1.5 text-sm font-bold text-slate-600 dark:text-slate-400 mr-2 flex-shrink-0">
+            <Filter size={15} />
+            FILTERS
+          </div>
+          {FILTERS.map(f => (
+            <button
+              key={f}
+              onClick={() => setActiveFilter(f)}
+              className={`text-xs font-bold px-3 py-1.5 rounded-lg whitespace-nowrap transition-all ${
+                activeFilter === f
+                  ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900'
+                  : 'bg-white dark:bg-dark-card text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-dark-border hover:border-slate-400'
+              }`}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
+        <button className="flex items-center gap-1 text-xs font-bold text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-dark-border px-3 py-1.5 rounded-lg hover:border-slate-400 transition-colors flex-shrink-0 ml-4">
+          SORT BY <Plus size={13} />
+        </button>
+      </div>
+
+      {/* Product Grid */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={activeFilter}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5"
+        >
+          {filtered.map(product => (
+            <ProductCard key={product.id} product={product} onDelete={handleDelete} />
+          ))}
+
+          {/* Add Product Cell */}
+          <Link to="/store/new-product">
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              className="aspect-auto bg-white dark:bg-dark-card rounded-2xl border-2 border-dashed border-slate-200 dark:border-dark-border flex flex-col items-center justify-center py-12 gap-2 cursor-pointer hover:border-primary-blue hover:bg-indigo-50 dark:hover:bg-indigo-900/10 transition-all group"
+            >
+              <Plus size={24} className="text-slate-300 dark:text-slate-600 group-hover:text-primary-blue transition-colors" />
+              <span className="text-xs font-bold text-slate-400 dark:text-slate-500 group-hover:text-primary-blue transition-colors tracking-wider">ADD PRODUCT</span>
+            </motion.div>
+          </Link>
+        </motion.div>
+      </AnimatePresence>
+    </DashboardLayout>
+  );
+};
+
+export default MyStore;
