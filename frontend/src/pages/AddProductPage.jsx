@@ -61,7 +61,7 @@ const AddProductPage = () => {
 
           {/* Classification */}
           <div className="bg-white dark:bg-dark-card rounded-2xl border border-slate-100 dark:border-dark-border shadow-sm p-6 space-y-5">
-            <h2 className="font-black text-slate-900 dark:text-white text-sm uppercase tracking-wider">Classification</h2>
+            <h2 className="font-black text-slate-900 dark:text-white text-sm uppercase tracking-wider">Classefication</h2>
             {[
               { label: 'Category', key: 'category', options: CATEGORIES },
               { label: 'Format', key: 'format', options: FORMATS },
