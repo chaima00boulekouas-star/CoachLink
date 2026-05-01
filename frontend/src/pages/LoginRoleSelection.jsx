@@ -20,7 +20,7 @@ const LoginRoleSelection = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
           {/* Athlete Login Option */}
-          <Card className="flex flex-col items-center text-center p-12 group hover:ring-4 hover:ring-indigo-500/10 transition-all">
+          <Card className="flex flex-col items-center text-center p-12 group hover:ring-4 hover:ring-indigo-500/10 transition-all duration-300 ease-out hover:scale-105">
             <div className="w-24 h-24 bg-indigo-50 dark:bg-indigo-900/20 rounded-full flex items-center justify-center mb-10 group-hover:scale-110 transition-transform">
               <Target size={48} className="text-indigo-600" />
             </div>
@@ -37,7 +37,7 @@ const LoginRoleSelection = () => {
           </Card>
 
           {/* Trainer Login Option */}
-          <Card className="flex flex-col items-center text-center p-12 group hover:ring-4 hover:ring-orange-500/10 transition-all">
+          <Card className="flex flex-col items-center text-center p-12 group hover:ring-4 hover:ring-orange-500/10 transition-all duration-300 ease-out hover:scale-105">
             <div className="w-24 h-24 bg-orange-50 dark:bg-orange-900/20 rounded-full flex items-center justify-center mb-10 group-hover:scale-110 transition-transform">
               <Trophy size={48} className="text-orange-500" />
             </div>
