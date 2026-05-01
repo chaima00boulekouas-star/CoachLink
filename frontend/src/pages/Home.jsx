@@ -150,7 +150,7 @@ const Home = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {processSteps.map((step, i) => (
-              <Card key={i} className="flex flex-col items-center text-center p-10 h-full group">
+              <Card key={i} className="flex flex-col items-center text-center p-10 h-full group transition-transform duration-300 ease-out hover:scale-105">
                 <div className="relative mb-8">
                   <div className="absolute inset-0 rounded-2xl bg-blue-300/0 dark:bg-amber-400/0 group-hover:bg-blue-300/40 dark:group-hover:bg-amber-400/40 blur-xl scale-150 transition-all duration-500 ease-out" />
                   <div className={`relative w-16 h-16 rounded-2xl ${step.color} border-2 ${step.borderColor} flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:rotate-6 group-hover:shadow-[0_0_20px_rgba(147,197,253,0.5)] dark:group-hover:shadow-[0_0_20px_rgba(251,191,36,0.5)]`}>
@@ -168,14 +168,14 @@ const Home = () => {
       {/* About Section */}
       <section id="about" className="py-32 bg-white dark:bg-dark-bg">
         <div className="container mx-auto px-4 md:px-6">
-          <div className="flex flex-col items-center mb-16">
-            <h2 className="text-3xl md:text-5xl font-black text-slate-200 dark:text-slate-800 uppercase tracking-tighter mb-[-1.5rem] select-none">About Us</h2>
-            <h2 className="text-3xl md:text-5xl font-black text-slate-900 dark:text-white relative">The CoachLink Story</h2>
+          <div className="flex flex-col items-center mb-16 space-y-3">
+            <span className="text-lg md:text-xl font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">About Us</span>
+            <h2 className="text-3xl md:text-5xl font-black text-slate-900 dark:text-white">The CoachLink Story</h2>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
             {missionVision.map((item, i) => (
-              <Card key={i} className="space-y-6 !p-12 relative overflow-hidden group">
+              <Card key={i} className="space-y-6 !p-12 relative overflow-hidden group transition-transform duration-300 ease-out hover:scale-105">
                 <div className={`absolute -right-12 -top-12 w-48 h-48 ${item.color} rounded-full blur-3xl opacity-50 transition-all group-hover:scale-150`} />
                 <div className="flex items-center space-x-4 mb-6 relative">
                   <div className="w-12 h-12 rounded-full border border-slate-200 dark:border-dark-border flex items-center justify-center">
@@ -192,24 +192,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Call to Action */}
-      <section className="py-24 container mx-auto px-4 md:px-6">
-        <div className="bg-indigo-600 dark:bg-indigo-800 rounded-[3rem] p-12 md:p-20 relative overflow-hidden text-center shadow-2xl">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full -mr-48 -mt-48 blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-96 h-96 bg-orange-500/20 rounded-full -ml-48 -mb-48 blur-3xl" />
-          
-          <h2 className="text-3xl md:text-5xl font-black text-white mb-6 relative">Ready to start your journey?</h2>
-          <p className="text-indigo-100 text-lg mb-10 max-w-2xl mx-auto relative opacity-90 font-medium">Join thousands of athletes and coaches already using CoachLink.</p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 relative">
-            <Link to="/join">
-              <Button variant="orange" className="!w-auto px-12 py-5 text-lg">Join CoachLink Now</Button>
-            </Link>
-            <Link to="/contact">
-              <Button variant="outline" className="!w-auto px-12 py-5 text-lg border-white/30 text-white hover:bg-white/10">Contact Support</Button>
-            </Link>
-          </div>
-        </div>
-      </section>
+
     </div>
   );
 };
