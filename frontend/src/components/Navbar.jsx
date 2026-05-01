@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { Moon, Sun, Menu, X } from 'lucide-react';
 import Logo from './Logo';
@@ -10,6 +10,7 @@ const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -19,12 +20,50 @@ const Navbar = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Handle hash scrolling after navigation
+  useEffect(() => {
+    if (location.hash) {
+      const id = location.hash.replace('#', '');
+      // Small delay to let the page render first
+      setTimeout(() => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
+    }
+  }, [location]);
+
   const navLinks = [
     { name: 'Home', path: '/' },
     { name: 'Our Process', path: '/#process' },
     { name: 'About', path: '/#about' },
-    { name: 'Contact', path: '/contact' },
+    { name: 'Contact', path: '/#contact' },
   ];
+
+  const handleNavClick = (e, link) => {
+    if (link.path.startsWith('/#')) {
+      e.preventDefault();
+      const id = link.path.replace('/#', '');
+
+      if (location.pathname === '/') {
+        // Already on home page, just scroll
+        const el = document.getElementById(id);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      } else {
+        // Navigate to home first, then scroll (handled by useEffect above)
+        navigate('/' , { replace: false });
+        setTimeout(() => {
+          const el = document.getElementById(id);
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 300);
+      }
+    }
+  };
 
   return (
     <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
@@ -40,13 +79,14 @@ const Navbar = () => {
         {/* Desktop Nav */}
         <div className="hidden md:flex items-center space-x-8">
           {navLinks.map((link) => (
-            <Link 
+            <a 
               key={link.name} 
-              to={link.path}
-              className="text-sm font-semibold text-slate-600 hover:text-indigo-600 dark:text-slate-300 dark:hover:text-indigo-400 transition-colors"
+              href={link.path}
+              onClick={(e) => handleNavClick(e, link)}
+              className="text-sm font-semibold text-slate-600 hover:text-indigo-600 dark:text-slate-300 dark:hover:text-indigo-400 transition-colors cursor-pointer"
             >
               {link.name}
-            </Link>
+            </a>
           ))}
         </div>
 
@@ -85,14 +125,14 @@ const Navbar = () => {
       {isMenuOpen && (
         <div className="md:hidden absolute top-full left-0 right-0 bg-white dark:bg-dark-bg border-b border-slate-200 dark:border-dark-border p-4 space-y-4 shadow-xl">
           {navLinks.map((link) => (
-            <Link 
+            <a 
               key={link.name} 
-              to={link.path}
-              onClick={() => setIsMenuOpen(false)}
-              className="block py-2 text-base font-medium text-slate-700 dark:text-slate-300"
+              href={link.path}
+              onClick={(e) => { handleNavClick(e, link); setIsMenuOpen(false); }}
+              className="block py-2 text-base font-medium text-slate-700 dark:text-slate-300 cursor-pointer"
             >
               {link.name}
-            </Link>
+            </a>
           ))}
           <div className="flex flex-col space-y-3 pt-2">
             <Link to="/login" onClick={() => setIsMenuOpen(false)}>

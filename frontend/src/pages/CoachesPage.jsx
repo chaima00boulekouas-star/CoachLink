@@ -3,6 +3,18 @@ import { Link } from 'react-router-dom';
 import { Search, Star, Send } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 
+const WILAYAS = [
+  'All', 'Adrar', 'Chlef', 'Laghouat', 'Oum El Bouaghi', 'Batna', 'Béjaïa', 'Biskra',
+  'Béchar', 'Blida', 'Bouira', 'Tamanrasset', 'Tébessa', 'Tlemcen', 'Tiaret', 'Tizi Ouzou',
+  'Alger', 'Djelfa', 'Jijel', 'Sétif', 'Saïda', 'Skikda', 'Sidi Bel Abbès', 'Annaba',
+  'Guelma', 'Constantine', 'Médéa', 'Mostaganem', 'M\'Sila', 'Mascara', 'Ouargla', 'Oran',
+  'El Bayadh', 'Illizi', 'Bordj Bou Arréridj', 'Boumerdès', 'El Tarf', 'Tindouf',
+  'Tissemsilt', 'El Oued', 'Khenchela', 'Souk Ahras', 'Tipaza', 'Mila', 'Aïn Defla',
+  'Naâma', 'Aïn Témouchent', 'Ghardaïa', 'Relizane', 'El M\'Ghair', 'El Meniaa',
+  'Ouled Djellal', 'Bordj Badji Mokhtar', 'Béni Abbès', 'Timimoun', 'Touggourt',
+  'Djanet', 'In Salah', 'In Guezzam'
+];
+
 const ALL_COACHES = [
   {
     id: 1,
@@ -42,12 +54,30 @@ const ALL_COACHES = [
   },
 ];
 
-const SPORTS = ['All', 'Tennis', 'Football', 'Basketball'];
+const SPORTS = [
+  'All', 'Football', 'Basketball', 'Tennis', 'Swimming', 'Boxing', 'Judo', 'Karate',
+  'Taekwondo', 'Athletics', 'Volleyball', 'Handball', 'Cycling', 'Weightlifting',
+  'Wrestling', 'Gymnastics', 'Martial Arts', 'Running', 'Yoga', 'CrossFit',
+  'Bodybuilding', 'Rugby', 'Table Tennis', 'Badminton', 'Kickboxing', 'Fencing',
+  'Archery', 'Rowing', 'Climbing', 'Skiing', 'Golf', 'Hockey'
+];
 
 const CoachesPage = () => {
   const [search, setSearch]       = useState('');
   const [sportFilter, setSportFilter] = useState('All');
   const [maxPrice, setMaxPrice]   = useState(200);
+  const [wilaya, setWilaya]       = useState('All');
+  const [showCustomPrice, setShowCustomPrice] = useState(false);
+  const [customPriceInput, setCustomPriceInput] = useState('');
+
+  const handleCustomPriceSubmit = () => {
+    const val = parseInt(customPriceInput, 10);
+    if (!isNaN(val) && val > 0) {
+      setMaxPrice(val);
+    }
+    setShowCustomPrice(false);
+    setCustomPriceInput('');
+  };
 
   const filtered = ALL_COACHES.filter((c) => {
     const q = search.toLowerCase();
@@ -89,21 +119,15 @@ const CoachesPage = () => {
               {/* Sport filter */}
               <div className="mb-5">
                 <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-2">Sport</p>
-                <div className="flex flex-col gap-2">
+                <select
+                  value={sportFilter}
+                  onChange={(e) => setSportFilter(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:outline-none"
+                >
                   {SPORTS.map((s) => (
-                    <button
-                      key={s}
-                      onClick={() => setSportFilter(s)}
-                      className={`text-left px-3 py-2 rounded-xl text-sm font-semibold transition-all ${
-                        sportFilter === s
-                          ? 'bg-indigo-600 text-white'
-                          : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
-                      }`}
-                    >
-                      {s}
-                    </button>
+                    <option key={s} value={s}>{s}</option>
                   ))}
-                </div>
+                </select>
               </div>
 
               {/* Experience */}
@@ -117,22 +141,71 @@ const CoachesPage = () => {
                 </select>
               </div>
 
+              {/* Wilaya */}
+              <div className="mb-5">
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-2">Wilaya</p>
+                <select
+                  value={wilaya}
+                  onChange={(e) => setWilaya(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:outline-none"
+                >
+                  {WILAYAS.map((w) => (
+                    <option key={w} value={w}>{w}</option>
+                  ))}
+                </select>
+              </div>
+
               {/* Price Range */}
-                <div>
-                  <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-2">Max Price: <span className="text-indigo-600 font-black">${maxPrice}/mo</span></p>
-                  <input
-                    type="range"
-                    className="w-full accent-indigo-600"
-                    min="49"
-                    max="200"
-                    step="10"
-                    value={maxPrice}
-                    onChange={(e) => setMaxPrice(Number(e.target.value))}
-                  />
-                  <div className="flex justify-between text-[10px] text-slate-400 mt-1">
-                    <span>$49</span><span>$200</span>
-                  </div>
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Max Price: <span className="text-indigo-600 font-black">${maxPrice}/mo</span></p>
+                  <button
+                    onClick={() => { setShowCustomPrice(true); setCustomPriceInput(String(maxPrice)); }}
+                    className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-900/50 transition-colors"
+                  >
+                    Custom
+                  </button>
                 </div>
+
+                {showCustomPrice ? (
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-bold">$</span>
+                      <input
+                        type="number"
+                        min="1"
+                        value={customPriceInput}
+                        onChange={(e) => setCustomPriceInput(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleCustomPriceSubmit()}
+                        autoFocus
+                        className="w-full pl-7 pr-3 py-2 text-sm rounded-xl border border-indigo-400 dark:border-indigo-500 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none"
+                        placeholder="Enter price"
+                      />
+                    </div>
+                    <button
+                      onClick={handleCustomPriceSubmit}
+                      className="px-3 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition-colors"
+                    >
+                      Set
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <input
+                      type="range"
+                      className="w-full accent-indigo-600"
+                      min="49"
+                      max={Math.max(200, maxPrice)}
+                      step="10"
+                      value={maxPrice}
+                      onChange={(e) => setMaxPrice(Number(e.target.value))}
+                    />
+                    <div className="flex justify-between text-[10px] text-slate-400 mt-1">
+                      <span>$49</span><span>${Math.max(200, maxPrice)}</span>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
 

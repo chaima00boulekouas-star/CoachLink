@@ -5,7 +5,7 @@ import { Instagram, Globe, Linkedin, Mail, Phone, MapPin } from 'lucide-react';
 
 const Footer = () => {
   return (
-    <footer className="bg-slate-50 dark:bg-[#0A0A16] pt-16 pb-8 border-t border-slate-200 dark:border-dark-border">
+    <footer id="contact" className="bg-slate-50 dark:bg-[#0A0A16] pt-16 pb-8 border-t border-slate-200 dark:border-dark-border">
       <div className="container mx-auto px-4 md:px-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
           {/* Logo & Description */}
