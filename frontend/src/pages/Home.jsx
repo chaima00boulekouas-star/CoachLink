@@ -1,12 +1,26 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { UserPlus, Search, TrendingUp, Target, Heart, ArrowRight } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import { Link } from 'react-router-dom';
 
+const slideshowImages = [
+  { src: "/slideshow_1.png", alt: "Trainer coaching athlete in the gym" },
+  { src: "/slideshow_2.png", alt: "Sprint training on outdoor track" },
+  { src: "/slideshow_3.png", alt: "Yoga and stretching session" },
+  { src: "/slideshow_4.png", alt: "Boxing coach training athlete" },
+];
+
 const Home = () => {
-  const heroImage = "/coach_training_athlete_hero_1775775147852.png"; // Relative to public if moved, but I'll use a placeholder if relative path fails
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % slideshowImages.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
 
   const processSteps = [
     {
@@ -65,17 +79,10 @@ const Home = () => {
             <p className="text-lg text-slate-600 dark:text-slate-400 mb-10 max-w-xl mx-auto lg:mx-0 leading-relaxed font-medium">
               CoachLink connects athletes with professional trainers based on sport, level, goals, and compatibility.
             </p>
-            <div className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start">
-              <Link to="/join" className="w-full sm:w-auto">
-                <Button variant="blue" className="px-10 py-4 text-base">Find a Trainer</Button>
-              </Link>
-              <Link to="/join" className="w-full sm:w-auto">
-                <Button variant="orange" className="px-10 py-4 text-base">Become a Trainer</Button>
-              </Link>
-            </div>
+
           </motion.div>
 
-          {/* Hero Image */}
+          {/* Hero Slideshow */}
           <motion.div 
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -83,16 +90,35 @@ const Home = () => {
             className="flex-1 relative"
           >
             <div className="absolute -inset-4 bg-gradient-to-tr from-indigo-500/20 to-orange-500/20 rounded-[3rem] blur-3xl" />
-            <div className="relative rounded-[2.5rem] overflow-hidden border-8 border-white dark:border-dark-border shadow-2xl">
-              <img 
-                src={heroImage} 
-                alt="Coach training athlete" 
-                className="w-full h-auto object-cover aspect-[4/3]"
-                onError={(e) => {
-                  e.target.src = "https://images.unsplash.com/photo-1526676037777-05a232554f77?auto=format&fit=crop&q=80&w=1000";
-                }}
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+            <div className="relative rounded-[2.5rem] overflow-hidden border-8 border-white dark:border-dark-border shadow-2xl aspect-[4/3]">
+              <AnimatePresence mode="wait">
+                <motion.img
+                  key={currentSlide}
+                  src={slideshowImages[currentSlide].src}
+                  alt={slideshowImages[currentSlide].alt}
+                  className="w-full h-full object-cover absolute inset-0"
+                  initial={{ opacity: 0, scale: 1.05 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.98 }}
+                  transition={{ duration: 0.8, ease: "easeInOut" }}
+                />
+              </AnimatePresence>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
+              {/* Slide indicators */}
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+                {slideshowImages.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setCurrentSlide(i)}
+                    className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
+                      i === currentSlide
+                        ? "bg-white w-8 shadow-lg"
+                        : "bg-white/50 hover:bg-white/80"
+                    }`}
+                    aria-label={`Go to slide ${i + 1}`}
+                  />
+                ))}
+              </div>
             </div>
             
             {/* Stats Badge */}
@@ -125,8 +151,11 @@ const Home = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {processSteps.map((step, i) => (
               <Card key={i} className="flex flex-col items-center text-center p-10 h-full group">
-                <div className={`w-16 h-16 rounded-2xl ${step.color} border-2 ${step.borderColor} flex items-center justify-center mb-8 transition-transform group-hover:scale-110 group-hover:rotate-6`}>
-                  {React.cloneElement(step.icon, { size: 32 })}
+                <div className="relative mb-8">
+                  <div className="absolute inset-0 rounded-2xl bg-blue-300/0 dark:bg-amber-400/0 group-hover:bg-blue-300/40 dark:group-hover:bg-amber-400/40 blur-xl scale-150 transition-all duration-500 ease-out" />
+                  <div className={`relative w-16 h-16 rounded-2xl ${step.color} border-2 ${step.borderColor} flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:rotate-6 group-hover:shadow-[0_0_20px_rgba(147,197,253,0.5)] dark:group-hover:shadow-[0_0_20px_rgba(251,191,36,0.5)]`}>
+                    {React.cloneElement(step.icon, { size: 32 })}
+                  </div>
                 </div>
                 <h3 className="text-xl font-black text-slate-900 dark:text-white mb-4 leading-tight">{step.title}</h3>
                 <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed">{step.desc}</p>
