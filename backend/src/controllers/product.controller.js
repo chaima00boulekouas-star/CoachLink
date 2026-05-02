@@ -7,7 +7,7 @@ import User from "../Models/User.Model.js";
 // @access  Private (Coach only)
 export const addProduct = async (req, res) => {
   try {
-    const { title, description, category, price, type, stock } = req.body;
+    const { title, description, category, format, level, price, type, stock } = req.body;
     const trainerId = req.user.id;
 
     if (!title || price === undefined || !type) {
@@ -45,6 +45,8 @@ export const addProduct = async (req, res) => {
       title,
       description,
       category,
+      format,
+      level,
       price,
       images: imagesPaths, // <-- Use the array of file paths here
       type,
@@ -143,7 +145,7 @@ export const getProductById = async (req, res) => {
 // @access  Private (Trainer only)
 export const updateProduct = async (req, res) => {
   try {
-    const { title, description, category, price, type, stock, isActive } = req.body;
+    const { title, description, category, format, level, price, type, stock, isActive } = req.body;
     const trainerId = req.user.id;
 
     let product = await Product.findById(req.params.id);
@@ -168,7 +170,7 @@ export const updateProduct = async (req, res) => {
 
     product = await Product.findByIdAndUpdate(
       req.params.id,
-      { $set: { title, description, category, price, type, stock, images: imagesPaths, isActive } },
+      { $set: { title, description, category, format, level, price, type, stock, images: imagesPaths, isActive } },
       { new: true }
     );
 

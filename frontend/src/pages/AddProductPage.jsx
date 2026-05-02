@@ -23,6 +23,7 @@ const AddProductPage = () => {
     category: 'Training Programs',
     format: 'Video',
     level: 'Intermediate',
+    stock: '',
     badge: '',
   });
 
@@ -49,7 +50,9 @@ const AddProductPage = () => {
       if (form.format === 'Video' || form.format === 'Live Session') type = 'program';
       formData.append('type', type);
       
-      formData.append('stock', 10);
+      formData.append('format', form.format);
+      formData.append('level', form.level);
+      formData.append('stock', form.stock || 0);
       
       images.forEach(img => {
         formData.append('images', img);
@@ -89,7 +92,10 @@ const AddProductPage = () => {
                 className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-dark-border bg-white dark:bg-dark-bg text-sm text-slate-900 dark:text-white focus:outline-none focus:border-primary-blue focus:ring-4 focus:ring-primary-blue/10 transition-all resize-none"
               />
             </div>
-            <Input label="Price ($)" type="number" placeholder="0.00" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input label="Price ($)" type="number" placeholder="0.00" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} />
+              <Input label="Stock (Optional)" type="number" placeholder="e.g. 10" value={form.stock} onChange={e => setForm({ ...form, stock: e.target.value })} />
+            </div>
           </div>
 
           {/* Classification */}
