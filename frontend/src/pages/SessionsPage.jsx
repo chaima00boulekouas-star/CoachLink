@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, Clock, Video, MapPin, Plus, ChevronLeft, ChevronRight, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 import { Link } from 'react-router-dom';
+import { sessionService } from '../api/dataService';
 
 const sessionStatusConfig = {
   Scheduled: { icon: CheckCircle, className: 'text-primary-blue bg-indigo-50 dark:bg-indigo-900/20', dot: 'bg-primary-blue' },
@@ -11,27 +12,38 @@ const sessionStatusConfig = {
   Pending: { icon: AlertCircle, className: 'text-amber-600 bg-amber-50 dark:bg-amber-900/20', dot: 'bg-amber-500' },
 };
 
-const sessions = [
-  { id: 1, athlete: 'Alex Johnson', sport: 'Football', date: 'Today', time: '09:00 AM', duration: '60 min', type: 'Video', status: 'Scheduled', avatar: 'AJ', color: 'bg-blue-500' },
-  { id: 2, athlete: 'Sarah Martinez', sport: 'Basketball', date: 'Today', time: '02:00 PM', duration: '45 min', type: 'In-Person', status: 'Scheduled', avatar: 'SM', color: 'bg-pink-500' },
-  { id: 3, athlete: 'Mike Brown', sport: 'Football', date: 'Tomorrow', time: '10:00 AM', duration: '90 min', type: 'Video', status: 'Scheduled', avatar: 'MB', color: 'bg-green-500' },
-  { id: 4, athlete: 'Emma Davis', sport: 'Tennis', date: 'Apr 12, 2026', time: '11:00 AM', duration: '60 min', type: 'In-Person', status: 'Pending', avatar: 'ED', color: 'bg-orange-500' },
-  { id: 5, athlete: 'James Wilson', sport: 'Football', date: 'Apr 8, 2026', time: '09:00 AM', duration: '60 min', type: 'Video', status: 'Completed', avatar: 'JW', color: 'bg-purple-500' },
-  { id: 6, athlete: 'Chris Evans', sport: 'Football', date: 'Apr 5, 2026', time: '03:00 PM', duration: '45 min', type: 'In-Person', status: 'Cancelled', avatar: 'CE', color: 'bg-indigo-500' },
-];
-
 const weeks = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const calendarDays = Array.from({ length: 30 }, (_, i) => i + 1);
 
 const SessionsPage = () => {
-  const [view, setView] = useState('list'); // 'list' | 'calendar'
+  const [view, setView] = useState('list');
   const [filter, setFilter] = useState('All');
   const [currentMonth] = useState('April 2026');
+  const [sessions, setSessions] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchSessions = async () => {
+      try {
+        const data = await sessionService.getAll();
+        setSessions(data.sessions || data || []);
+      } catch (err) {
+        console.error('Failed to fetch sessions:', err);
+        setSessions([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchSessions();
+  }, []);
 
   const filters = ['All', 'Scheduled', 'Pending', 'Completed', 'Cancelled'];
   const filtered = sessions.filter(s => filter === 'All' || s.status === filter);
 
-  const sessionDays = [10, 11, 15, 17, 20];
+  const sessionDays = sessions.map(s => {
+    const d = new Date(s.date);
+    return isNaN(d.getTime()) ? null : d.getDate();
+  }).filter(Boolean);
 
   return (
     <DashboardLayout>
@@ -40,7 +52,7 @@ const SessionsPage = () => {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-black text-slate-900 dark:text-white">Training Sessions</h1>
-            <p className="text-slate-500 dark:text-slate-400 mt-1">Manage and track all your coaching sessions</p>
+            <p className="text-slate-500 dark:text-slate-400 mt-1">Manage and track all your training sessions</p>
           </div>
           <div className="flex items-center gap-3">
             {/* View toggle */}
@@ -103,7 +115,7 @@ const SessionsPage = () => {
 
                   {/* Info */}
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-slate-900 dark:text-white text-sm">{s.athlete}</h3>
+                    <h3 className="font-bold text-slate-900 dark:text-white text-sm">{s.athlete?.name || s.athlete}</h3>
                     <p className="text-xs text-primary-orange font-semibold">{s.sport}</p>
                   </div>
 

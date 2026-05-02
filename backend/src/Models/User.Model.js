@@ -24,7 +24,7 @@ const userSchema = new mongoose.Schema(
 
     role: {
       type: String,
-      enum: ["coach", "trainee", "admin"],
+      enum: ["trainer", "athlete", "admin"],
       required: true,
       index: true,
     },
@@ -41,6 +41,12 @@ const userSchema = new mongoose.Schema(
       city: String,
       country: String,
     },
+
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+    verificationToken: String,
   },
   { timestamps: true }
 );

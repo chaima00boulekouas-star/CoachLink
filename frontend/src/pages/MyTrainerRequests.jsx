@@ -200,7 +200,7 @@ const AthleteRequestCard = ({ request }) => {
             className="mx-5 mb-5 rounded-xl border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/10 p-4"
           >
             <p className="text-xs font-bold text-green-600 dark:text-green-400 mb-3 flex items-center gap-2">
-              <CheckCircle size={13} /> Coach accepted! Here is their contact:
+              <CheckCircle size={13} /> Trainer accepted! Here is their contact:
             </p>
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-2">
@@ -221,7 +221,7 @@ const AthleteRequestCard = ({ request }) => {
             animate={{ opacity: 1, height: 'auto' }}
             className="mx-5 mb-5 rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/10 p-3"
           >
-            <p className="text-xs font-semibold text-red-500">The coach declined your request. Try another coach!</p>
+            <p className="text-xs font-semibold text-red-500">The trainer declined your request. Try another trainer!</p>
           </motion.div>
         )}
       </AnimatePresence>
@@ -244,16 +244,16 @@ const MyTrainerRequests = () => {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-black text-slate-900 dark:text-white mb-1">
-            {isAthlete ? 'My Coach Requests' : 'Athlete Requests'}
+            {isAthlete ? 'My Trainer Requests' : 'Athlete Requests'}
           </h1>
           <p className="text-slate-500 dark:text-slate-400">
             {isAthlete
-              ? 'Track the requests you have sent to coaches'
+              ? 'Track the requests you have sent to trainers'
               : 'Manage incoming training requests from athletes'}
           </p>
           {isAthlete && (
             <Link to="/coaches" className="inline-flex items-center gap-2 mt-4 bg-orange-500 text-white text-sm font-bold px-5 py-2.5 rounded-xl hover:opacity-90 transition-opacity shadow-lg shadow-orange-500/20">
-              + Find a New Coach
+              + Find a New Trainer
             </Link>
           )}
         </div>
@@ -269,7 +269,7 @@ const MyTrainerRequests = () => {
               <div className="text-center py-16 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700">
                 <p className="text-slate-400 text-sm font-semibold">No requests sent yet.</p>
                 <Link to="/coaches" className="text-indigo-600 text-sm font-bold hover:underline mt-2 inline-block">
-                  Browse coaches →
+                  Browse trainers →
                 </Link>
               </div>
             )

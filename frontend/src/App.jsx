@@ -14,6 +14,8 @@ import TrainerLogin from './pages/TrainerLogin';
 import AthleteSignUp from './pages/AthleteSignUp';
 import TrainerSignUp from './pages/TrainerSignUp';
 import ForgotPassword from './pages/ForgotPassword';
+import VerifyEmail from './pages/VerifyEmail';
+import CheckEmail from './pages/CheckEmail';
 
 // ── Dashboard pages (use DashboardLayout with Sidebar + Topbar) ──
 import TrainerDashboard from './pages/TrainerDashboard';
@@ -39,6 +41,7 @@ import AthleteStorePage from './pages/AthleteStorePage';
 import AthleteProfilePage from './pages/AthleteProfilePage';
 import AthleteSessionsPage from './pages/AthleteSessionsPage';
 import CartPage from './pages/CartPage';
+import ChatPage from './pages/ChatPage';
 // ── Admin module ──
 import AdminGuard from './components/AdminGuard';
 import AdminLoginPage from './pages/AdminLoginPage';
@@ -153,6 +156,8 @@ const App = () => {
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/search" element={<SearchPage />} />
             <Route path="/orders" element={<TrainerDashboard />} />
+            <Route path="/chat" element={<ChatPage />} />
+            <Route path="/chat/:conversationId" element={<ChatPage />} />
 
             {/* ── Admin Routes (role-protected) ── */}
             <Route path="/admin/dashboard" element={<AdminGuard><AdminDashboard /></AdminGuard>} />
@@ -174,6 +179,22 @@ const App = () => {
                       Go Home
                     </a>
                   </div>
+                </MainLayout>
+              }
+            />
+            <Route
+              path="/verify-email"
+              element={
+                <MainLayout>
+                  <VerifyEmail />
+                </MainLayout>
+              }
+            />
+            <Route
+              path="/check-email"
+              element={
+                <MainLayout>
+                  <CheckEmail />
                 </MainLayout>
               }
             />

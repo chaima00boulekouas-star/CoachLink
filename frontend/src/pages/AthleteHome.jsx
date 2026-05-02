@@ -1,7 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Star, Zap, BookOpen, MessageSquare, Calendar, TrendingUp, ArrowRight } from 'lucide-react';
+import { Search, Star, Zap, BookOpen, MessageSquare, Calendar, TrendingUp, ArrowRight, MapPin, User } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
+import { useSelector } from 'react-redux';
 
 const FEATURED_COACHES = [
   {
@@ -101,7 +102,16 @@ const CoachCard = ({ coach }) => (
   </div>
 );
 
-const AthleteHome = () => (
+const AthleteHome = () => {
+  const user = useSelector((s) => s.auth.user);
+
+  const name     = user?.name     || 'Athlete';
+  const location = user?.location || '';
+  const sport    = Array.isArray(user?.sports) ? user.sports[0] : (user?.sport || '');
+  const level    = user?.level    || '';
+  const age      = user?.age      || '';
+
+  return (
   <DashboardLayout>
     <div className="max-w-6xl mx-auto space-y-10">
 
@@ -114,9 +124,19 @@ const AthleteHome = () => (
           <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur text-xs font-bold px-3 py-1.5 rounded-full mb-4">
             <Zap size={12} /> Athlete Dashboard
           </div>
-          <h1 className="text-3xl md:text-4xl font-black mb-3 leading-tight">
-            Find your perfect<br />coach today
+          <h1 className="text-3xl md:text-4xl font-black mb-1 leading-tight">
+            Welcome back, {name.split(' ')[0]}! 👋
           </h1>
+          {location && (
+            <p className="text-white/70 text-xs flex items-center gap-1 mb-2">
+              <MapPin size={11} /> {location}
+            </p>
+          )}
+          <div className="flex flex-wrap gap-2 mb-4">
+            {sport  && <span className="bg-white/20 text-xs font-bold px-2.5 py-1 rounded-full">🏅 {sport}</span>}
+            {level  && <span className="bg-white/20 text-xs font-bold px-2.5 py-1 rounded-full">⭐ {level}</span>}
+            {age    && <span className="bg-white/20 text-xs font-bold px-2.5 py-1 rounded-full">{age} years old</span>}
+          </div>
           <p className="text-white/80 text-sm mb-6 leading-relaxed">
             Browse top-rated trainers, book sessions, and start crushing your goals with a personalised growth plan.
           </p>
@@ -164,7 +184,9 @@ const AthleteHome = () => (
         <div className="flex items-center justify-between mb-5">
           <div>
             <h2 className="text-xl font-black text-slate-900 dark:text-white">Recommended for You</h2>
-            <p className="text-xs text-slate-500 mt-0.5">Based on your sport: Tennis</p>
+            <p className="text-xs text-slate-500 mt-0.5">
+              {sport ? `Based on your sport: ${sport}` : 'Based on your profile'}
+            </p>
           </div>
           <Link to="/coaches" className="text-sm font-bold text-indigo-600 hover:underline flex items-center gap-1">
             View all <ArrowRight size={14} />
@@ -194,6 +216,7 @@ const AthleteHome = () => (
 
     </div>
   </DashboardLayout>
-);
+  );
+};
 
 export default AthleteHome;

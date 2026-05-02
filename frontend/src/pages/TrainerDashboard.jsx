@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import {
@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 import StatCard from '../components/StatCard';
 import DashboardLayout from '../components/DashboardLayout';
+import { useSelector } from 'react-redux';
+import { trainerService } from '../api/dataService';
 
 // Generate initials avatar with consistent color
 const Avatar = ({ name, className = '' }) => {
@@ -20,62 +22,37 @@ const Avatar = ({ name, className = '' }) => {
   );
 };
 
-// Mock earnings data for the chart
-const earningsData = [
-  { month: 'Nov', value: 3000 },
-  { month: 'Dec', value: 4500 },
-  { month: 'Jan', value: 3800 },
-  { month: 'Feb', value: 5500 },
-  { month: 'Mar', value: 6000 },
-  { month: 'Apr', value: 7200 },
-];
-
-const maxValue = Math.max(...earningsData.map(d => d.value));
-
-const EarningsChart = () => (
-  <div className="relative h-32 flex items-end space-x-1 mt-4">
-    {earningsData.map((d, i) => {
-      const height = (d.value / maxValue) * 100;
-      return (
-        <div key={i} className="flex flex-col items-center flex-1">
-          <div
-            className="w-full rounded-t-lg bg-gradient-to-t from-primary-blue/30 to-primary-blue/5 relative group"
-            style={{ height: `${height}%` }}
-          >
+const EarningsChart = ({ data }) => {
+  const maxVal = data.length > 0 ? Math.max(...data.map(d => d.value)) : 1;
+  if (data.length === 0) {
+    return <p className="text-sm text-slate-400 text-center py-8">No earnings data yet</p>;
+  }
+  return (
+    <div className="relative h-32 flex items-end space-x-1 mt-4">
+      {data.map((d, i) => {
+        const height = (d.value / maxVal) * 100;
+        return (
+          <div key={i} className="flex flex-col items-center flex-1">
             <div
-              className="absolute bottom-0 left-0 right-0 rounded-t-lg bg-gradient-to-t from-primary-blue to-indigo-400"
-              style={{ height: '30%', minHeight: '4px' }}
-            />
-            {/* Tooltip */}
-            <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] rounded px-1.5 py-0.5 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-10">
-              ${d.value.toLocaleString()}
+              className="w-full rounded-t-lg bg-gradient-to-t from-primary-blue/30 to-primary-blue/5 relative group"
+              style={{ height: `${height}%` }}
+            >
+              <div
+                className="absolute bottom-0 left-0 right-0 rounded-t-lg bg-gradient-to-t from-primary-blue to-indigo-400"
+                style={{ height: '30%', minHeight: '4px' }}
+              />
+              {/* Tooltip */}
+              <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] rounded px-1.5 py-0.5 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                ${d.value.toLocaleString()}
+              </div>
             </div>
+            <span className="text-[10px] text-slate-400 mt-1">{d.month}</span>
           </div>
-          <span className="text-[10px] text-slate-400 mt-1">{d.month}</span>
-        </div>
-      );
-    })}
-  </div>
-);
-
-const recentOrders = [
-  { id: 1, trainee: 'Alex Johnson', product: '12-Week Football Program', price: '$299', qty: 1, status: 'Paid', date: 'Apr 7, 2026', initials: 'AJ', color: 'bg-blue-500' },
-  { id: 2, trainee: 'Sarah Martinez', product: 'Elite Tactics Masterclass', price: '$149', qty: 1, status: 'Paid', date: 'Apr 6, 2026', initials: 'SM', color: 'bg-pink-500' },
-  { id: 3, trainee: 'Mike Brown', product: 'Speed & Agility Accelerator', price: '$189', qty: 2, status: 'Pending', date: 'Apr 5, 2026', initials: 'MB', color: 'bg-green-500' },
-  { id: 4, trainee: 'Emma Davis', product: 'Nutrition & Meal Guide', price: '$79', qty: 1, status: 'Paid', date: 'Apr 4, 2026', initials: 'ED', color: 'bg-orange-500' },
-  { id: 5, trainee: 'James Wilson', product: 'Mental Performance Bundle', price: '$129', qty: 1, status: 'Cancelled', date: 'Apr 3, 2026', initials: 'JW', color: 'bg-purple-500' },
-];
-
-const upcomingSessions = [
-  { id: 1, name: 'Alex Johnson', time: 'Today · 09:00 AM', initials: 'AJ', color: 'bg-blue-500' },
-  { id: 2, name: 'Sarah Martinez', time: 'Today · 02:00 PM', initials: 'SM', color: 'bg-pink-500' },
-  { id: 3, name: 'Mike Brown', time: 'Tomorrow · 10:00 AM', initials: 'MB', color: 'bg-green-500' },
-];
-
-const athleteRequests = [
-  { id: 1, name: 'Chris Evans', sport: 'Football', level: 'Competitive', goal: 'Skill Improvement', initials: 'CE', color: 'bg-indigo-500' },
-  { id: 2, name: 'Lena Gomez', sport: 'Football', level: 'Beginner', goal: 'Fitness', initials: 'LG', color: 'bg-purple-500' },
-];
+        );
+      })}
+    </div>
+  );
+};
 
 const statusStyles = {
   Paid: 'text-green-600 dark:text-green-400',
@@ -85,6 +62,35 @@ const statusStyles = {
 
 const TrainerDashboard = () => {
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+  const user = useSelector(state => state.auth.user);
+  const userName = user?.name || 'Coach';
+
+  const [stats, setStats] = useState({ totalEarnings: 0, totalProducts: 0, upcomingSessions: 0, totalAthletes: 0, ratingAvg: 0 });
+  const [earningsData, setEarningsData] = useState([]);
+  const [recentOrders, setRecentOrders] = useState([]);
+  const [upcomingSessions, setUpcomingSessions] = useState([]);
+  const [athleteRequests, setAthleteRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDashboard = async () => {
+      try {
+        const data = await trainerService.getDashboardStats();
+        setStats(data.stats || stats);
+        setEarningsData(data.earnings || []);
+        setRecentOrders(data.recentOrders || []);
+        setUpcomingSessions(data.upcomingSessions || []);
+        setAthleteRequests(data.athleteRequests || []);
+      } catch (err) {
+        console.error('Failed to fetch dashboard:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDashboard();
+  }, []);
+
+  const maxValue = earningsData.length > 0 ? Math.max(...earningsData.map(d => d.value)) : 1;
 
   return (
     <DashboardLayout>
@@ -96,7 +102,7 @@ const TrainerDashboard = () => {
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div>
                 <p className="text-sm text-slate-500 dark:text-slate-400 mb-0.5">Welcome back 👋</p>
-                <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">Ted Lasso</h1>
+                <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{userName}</h1>
               </div>
               <div className="text-right">
                 <p className="hidden sm:block text-sm text-slate-500 dark:text-slate-400">{today}</p>
@@ -106,11 +112,11 @@ const TrainerDashboard = () => {
 
             {/* Stats Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
-              <StatCard label="Total Earnings" value="$12,450" icon={DollarSign} iconBg="bg-primary-orange" trend={18} trendLabel="+18% this month" />
-              <StatCard label="Total Products" value="6" icon={Package} iconBg="bg-primary-blue" trend={2} trendLabel="+2 this week" />
-              <StatCard label="Upcoming" value="3 Sessions" icon={Calendar} iconBg="bg-green-500" trend={0} trendLabel="Next: Today 9AM" />
-              <StatCard label="Total Trainees" value="0" icon={Users} iconBg="bg-purple-500" trend={3} trendLabel="+3 this month" />
-              <StatCard label="Coach Rating" value="4.8" icon={Star} iconBg="bg-amber-400" trend={5} trendLabel="↑ Top 5%" />
+              <StatCard label="Total Earnings" value={`$${stats.totalEarnings?.toLocaleString() || '0'}`} icon={DollarSign} iconBg="bg-primary-orange" trend={18} trendLabel="+18% this month" />
+              <StatCard label="Total Products" value={String(stats.totalProducts || 0)} icon={Package} iconBg="bg-primary-blue" trend={2} trendLabel="+2 this week" />
+              <StatCard label="Upcoming" value={`${stats.upcomingSessions || 0} Sessions`} icon={Calendar} iconBg="bg-green-500" trend={0} trendLabel="Next: Today 9AM" />
+              <StatCard label="Total Athletes" value={String(stats.totalAthletes || 0)} icon={Users} iconBg="bg-purple-500" trend={3} trendLabel="+3 this month" />
+              <StatCard label="Trainer Rating" value={String(stats.ratingAvg || '0.0')} icon={Star} iconBg="bg-amber-400" trend={5} trendLabel="↑ Top 5%" />
             </div>
 
             {/* Earnings Chart + Quick Actions + Sessions */}
@@ -120,11 +126,11 @@ const TrainerDashboard = () => {
                 <div className="flex items-center justify-between mb-2">
                   <div>
                     <h3 className="font-bold text-slate-900 dark:text-white">Earnings Overview</h3>
-                    <p className="text-xs text-slate-400">Last 6 months · Total: $30,700</p>
+                    <p className="text-xs text-slate-400">Last 6 months</p>
                   </div>
-                  <span className="text-xs font-bold text-green-500">+10% vs last period</span>
+                  <span className="text-xs font-bold text-green-500">Overview</span>
                 </div>
-                <EarningsChart />
+                <EarningsChart data={earningsData} />
               </div>
 
               {/* Quick Actions + Sessions */}
@@ -193,18 +199,18 @@ const TrainerDashboard = () => {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-slate-100 dark:border-dark-border">
-                      {['Trainee', 'Product', 'Price', 'Qty', 'Status', 'Date'].map(h => (
+                      {['Athlete', 'Product', 'Price', 'Qty', 'Status', 'Date'].map(h => (
                         <th key={h} className="text-left text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-5 py-3">{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50 dark:divide-dark-border">
                     {recentOrders.map(order => (
-                      <tr key={order.id} className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                      <tr key={order._id || order.id} className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
                         <td className="px-5 py-3">
                           <div className="flex items-center gap-2">
-                            <div className={`${order.color} w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold`}>{order.initials}</div>
-                            <span className="text-sm font-semibold text-slate-900 dark:text-white whitespace-nowrap">{order.trainee}</span>
+                            <Avatar name={order.user?.name || order.trainee || "User"} className="w-7 h-7" />
+                            <span className="text-sm font-semibold text-slate-900 dark:text-white whitespace-nowrap">{order.user?.name || order.trainee}</span>
                           </div>
                         </td>
                         <td className="px-5 py-3 text-sm text-slate-600 dark:text-slate-400 max-w-[180px] truncate">{order.product}</td>
@@ -259,19 +265,23 @@ const TrainerDashboard = () => {
           <div className="hidden xl:block w-64 flex-shrink-0 space-y-4">
             {/* Profile Card */}
             <div className="bg-white dark:bg-dark-card rounded-2xl overflow-hidden border border-slate-100 dark:border-dark-border shadow-sm">
-              <div className="h-24 bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-600 relative">
-                <img
-                  src="https://images.unsplash.com/photo-1553361371-9b22f78e8b1d?auto=format&fit=crop&q=80&w=400"
-                  alt="Ted Lasso"
-                  className="w-full h-full object-cover"
-                />
+              <div className="h-24 bg-gradient-to-br from-primary-blue/20 to-indigo-200 dark:from-slate-700 dark:to-slate-600 relative">
+                {user?.coverImage && (
+                  <img src={user.coverImage} alt="cover" className="w-full h-full object-cover" />
+                )}
               </div>
               <div className="p-4 text-center -mt-8">
-                <div className="w-16 h-16 bg-primary-blue rounded-2xl mx-auto mb-3 overflow-hidden border-4 border-white dark:border-dark-card shadow-lg">
-                  <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200" alt="Ted Lasso" className="w-full h-full object-cover" />
+                <div className="w-16 h-16 bg-primary-blue rounded-2xl mx-auto mb-3 overflow-hidden border-4 border-white dark:border-dark-card shadow-lg flex items-center justify-center">
+                  {user?.avatar ? (
+                    <img src={user.avatar} alt={userName} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-white font-black text-lg">
+                      {userName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                    </span>
+                  )}
                 </div>
-                <h3 className="font-black text-slate-900 dark:text-white text-sm">Ted Lasso</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">Head Coach · Football</p>
+                <h3 className="font-black text-slate-900 dark:text-white text-sm">{userName}</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">{user?.sport || 'Trainer'}</p>
                 <Link to="/profile/me">
                   <button className="w-full bg-primary-orange text-white text-xs font-bold py-2 rounded-xl hover:opacity-90 transition-opacity">
                     View Profile

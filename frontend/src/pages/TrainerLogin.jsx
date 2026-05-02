@@ -6,23 +6,30 @@ import Card from '../components/Card';
 import Input from '../components/Input';
 import { useDispatch } from 'react-redux';
 import { login } from '../redux/store';
+import authService from '../api/authService';
 
 const TrainerLogin = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [googleMsg, setGoogleMsg] = useState(false);
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    // Mock login
-    setTimeout(() => {
-      dispatch(login({ user: { email, name: 'Coach Sarah' }, role: 'trainer' }));
-      setIsLoading(false);
+    setError('');
+    try {
+      const data = await authService.trainerLogin(email, password);
+      dispatch(login({ user: data.user, role: data.user.role, token: data.token }));
       navigate('/dashboard');
-    }, 1500);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -43,6 +50,12 @@ const TrainerLogin = () => {
             <h1 className="text-3xl font-black text-slate-900 dark:text-white mb-2">Trainer Login</h1>
             <p className="text-slate-500 dark:text-slate-400 text-center font-medium">Welcome back! Sign in to manage your athletes</p>
           </div>
+
+          {error && (
+            <div className="mb-4 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-semibold text-center">
+              {error}
+            </div>
+          )}
 
           <form onSubmit={handleLogin} className="space-y-6">
             <Input 
@@ -72,28 +85,6 @@ const TrainerLogin = () => {
               Sign In
             </Button>
 
-            <div className="flex items-center gap-4 mt-2">
-              <div className="flex-1 h-px bg-slate-200 dark:bg-dark-border" />
-              <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">or</span>
-              <div className="flex-1 h-px bg-slate-200 dark:bg-dark-border" />
-            </div>
-
-            <button
-              type="button"
-              onClick={() => {
-                // TODO: Wire up Google OAuth
-                window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/google?role=trainer`;
-              }}
-              className="w-full flex items-center justify-center gap-3 py-4 rounded-xl border-2 border-slate-200 dark:border-dark-border bg-white dark:bg-dark-card text-slate-700 dark:text-slate-200 font-bold text-base hover:bg-slate-50 dark:hover:bg-dark-border/50 hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
-            >
-              <svg width="20" height="20" viewBox="0 0 48 48">
-                <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-                <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-                <path fill="#FBBC05" d="M10.53 28.59a14.5 14.5 0 0 1 0-9.18l-7.98-6.19a24.01 24.01 0 0 0 0 21.56l7.98-6.19z"/>
-                <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-              </svg>
-              Continue with Google
-            </button>
           </form>
 
           <div className="mt-8 text-center space-y-4">

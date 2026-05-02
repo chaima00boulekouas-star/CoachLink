@@ -4,6 +4,8 @@ import { Star, Check, ShoppingBag, Send, X } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 import { useDispatch } from 'react-redux';
 import { cancelAthleteRequest } from '../redux/store';
+import { productService } from '../api/dataService';
+import { getImageUrl, FALLBACK_PRODUCT_IMAGE } from '../utils/imageUrl';
 
 const COACHES = {
   1: { name: 'Tashi Duncan',    sport: 'Tennis',      bio: 'Professional Tennis Coach with 10+ years helping athletes reach their peak performance through tailored training and mental coaching.', image: 'https://images.unsplash.com/photo-1574680096145-d05b474e2155?auto=format&fit=crop&q=80&w=600', rating: 4.9, reviews: 36, athletes: 12 },
@@ -18,18 +20,7 @@ const PLANS = [
   { id: 'champion', name: 'Champion', price: '$149', period: '/month', popular: false, features: ['Unlimited sessions', 'Custom nutrition plan', '24/7 coach access', 'Weekly video calls'] },
 ];
 
-const STORE_PRODUCTS = {
-  1: [
-    { id: 1, title: '12-Week Tennis Mastery Guide', price: 49, image: 'https://images.unsplash.com/photo-1535131749006-b7f58c99034b?auto=format&fit=crop&q=80&w=400', tag: 'Best Seller' },
-    { id: 4, title: 'Advanced Serve & Volley Tactics', price: 39, image: 'https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?auto=format&fit=crop&q=80&w=400', tag: 'Sale' },
-  ],
-  2: [
-    { id: 2, title: 'Football Conditioning Program', price: 79, image: 'https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?auto=format&fit=crop&q=80&w=400', tag: 'New' },
-    { id: 6, title: 'Defensive Positioning Masterclass', price: 49, image: 'https://images.unsplash.com/photo-1560272564-c83b66b1ad12?auto=format&fit=crop&q=80&w=400', tag: null },
-  ],
-  3: [{ id: 3, title: 'Basketball Fundamentals Course', price: 59, image: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&q=80&w=400', tag: null }],
-  4: [{ id: 5, title: 'Strength & Conditioning Bundle', price: 99, image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=400', tag: 'Popular' }],
-};
+
 
 const TAG_COLORS = { 'Best Seller': 'bg-amber-500', 'New': 'bg-green-500', 'Sale': 'bg-red-500', 'Popular': 'bg-indigo-600' };
 
@@ -37,12 +28,24 @@ const CoachProfile = () => {
   const { id }     = useParams();
   const dispatch   = useDispatch();
   const coach      = COACHES[id] || COACHES[1];
-  const products   = STORE_PRODUCTS[id] || [];
-
+  
+  const [products, setProducts]     = useState([]);
   const [requested, setRequested]   = useState(false);
   const [reqMessage, setReqMessage] = useState('');
   const [showForm, setShowForm]     = useState(false);
   const [cart, setCart]             = useState([]);
+
+  React.useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const data = await productService.getAll({ trainerId: id });
+        setProducts(data.products || []);
+      } catch (error) {
+        console.error('Failed to fetch products:', error);
+      }
+    };
+    fetchProducts();
+  }, [id]);
 
   const doRequest = () => {
     if (!reqMessage.trim()) return;
@@ -50,7 +53,7 @@ const CoachProfile = () => {
     setShowForm(false);
   };
 
-  const addToCart = (p) => setCart((prev) => prev.find((i) => i.id === p.id) ? prev : [...prev, p]);
+  const addToCart = (p) => setCart((prev) => prev.find((i) => i._id === p._id) ? prev : [...prev, p]);
 
   return (
     <DashboardLayout>
@@ -63,7 +66,7 @@ const CoachProfile = () => {
           <div className="relative flex flex-col md:flex-row gap-8 p-8 md:p-12">
             <div className="flex-1 text-white self-end md:self-center">
               <div className="inline-flex items-center gap-1.5 bg-indigo-500/20 text-indigo-300 text-xs font-bold px-3 py-1 rounded-full mb-4">
-                {coach.sport} Coach
+                {coach.sport} Trainer
               </div>
               <h1 className="text-4xl font-black mb-3">{coach.name}</h1>
               <div className="flex items-center gap-2 mb-4">
@@ -177,7 +180,7 @@ const CoachProfile = () => {
           <div>
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-2xl font-black text-slate-900 dark:text-white">Coach Store</h2>
+                <h2 className="text-2xl font-black text-slate-900 dark:text-white">Trainer Store</h2>
                 <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Programs and resources from {coach.name}</p>
               </div>
               {cart.length > 0 && (
@@ -190,31 +193,35 @@ const CoachProfile = () => {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               {products.map((product) => (
-                <div key={product.id} className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                  <div className="relative aspect-video overflow-hidden">
-                    <img src={product.image} alt={product.title} className="w-full h-full object-cover" />
-                    {product.tag && (
-                      <span className={`absolute top-2 left-2 ${TAG_COLORS[product.tag] || 'bg-slate-600'} text-white text-[10px] font-black px-2.5 py-1 rounded-full`}>
-                        {product.tag}
+                <div key={product._id} className="flex bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 overflow-hidden shadow-sm group">
+                  <div className="w-1/3 min-h-[120px] bg-slate-200 dark:bg-slate-700 relative">
+                    <img src={getImageUrl(product.images && product.images[0], FALLBACK_PRODUCT_IMAGE)} alt={product.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    {product.badge && (
+                      <span className={`absolute top-2 left-2 ${TAG_COLORS[product.badge] || 'bg-slate-900'} text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow-sm`}>
+                        {product.badge}
                       </span>
                     )}
                   </div>
-                  <div className="p-4 flex items-center justify-between">
+                  <div className="w-2/3 p-4 flex flex-col justify-between">
                     <div>
-                      <h3 className="font-bold text-slate-900 dark:text-white text-sm">{product.title}</h3>
-                      <p className="text-xl font-black text-slate-900 dark:text-white mt-1">${product.price}</p>
+                      <h4 className="font-bold text-slate-900 dark:text-white text-sm mb-1 line-clamp-2 leading-snug group-hover:text-indigo-600 transition-colors">
+                        {product.title}
+                      </h4>
+                      <span className="text-xl font-black text-slate-900 dark:text-white">${product.price}</span>
                     </div>
-                    <button
-                      onClick={() => addToCart(product)}
-                      className={`flex items-center gap-1.5 text-sm font-bold px-4 py-2 rounded-xl transition-all ${
-                        cart.find((i) => i.id === product.id)
-                          ? 'bg-green-100 dark:bg-green-900/20 text-green-600 border border-green-200 dark:border-green-800'
-                          : 'bg-orange-500 text-white hover:opacity-90 shadow-md shadow-orange-500/20'
-                      }`}
-                    >
-                      <ShoppingBag size={14} />
-                      {cart.find((i) => i.id === product.id) ? 'Added' : 'Add to Cart'}
-                    </button>
+                    <div className="flex justify-end mt-2">
+                      <button
+                        onClick={() => addToCart(product)}
+                        className={`flex items-center gap-1.5 text-sm font-bold px-4 py-2 rounded-xl transition-all ${
+                          cart.find((i) => i._id === product._id)
+                            ? 'bg-green-100 dark:bg-green-900/20 text-green-600 border border-green-200 dark:border-green-800'
+                            : 'bg-orange-500 text-white hover:opacity-90 shadow-md shadow-orange-500/20'
+                        }`}
+                      >
+                        <ShoppingBag size={14} />
+                        {cart.find((i) => i._id === product._id) ? 'Added' : 'Add to Cart'}
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}

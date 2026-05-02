@@ -1,5 +1,6 @@
 import Product from "../Models/Product.Model.js";
 import Store from "../Models/Store.Model.js";
+import User from "../Models/User.Model.js";
 
 // @desc    Add a new product to the coach's store
 // @route   POST /api/products
@@ -7,7 +8,7 @@ import Store from "../Models/Store.Model.js";
 export const addProduct = async (req, res) => {
   try {
     const { title, description, category, price, type, stock } = req.body;
-    const coachId = req.user.id;
+    const trainerId = req.user.id;
 
     if (!title || price === undefined || !type) {
       return res.status(400).json({ message: "Title, price, and type are required." });
@@ -17,21 +18,30 @@ export const addProduct = async (req, res) => {
       return res.status(400).json({ message: "Price cannot be negative." });
     }
 
-    const store = await Store.findOne({ coach: coachId });
+    let store = await Store.findOne({ trainer: trainerId });
     if (!store) {
-      return res.status(404).json({ message: "Store not found. Please create a store first." });
+      // Auto-create store for the trainer
+      const trainer = await User.findById(trainerId);
+      store = new Store({
+        trainer: trainerId,
+        name: trainer ? `${trainer.name}'s Store` : 'My Store',
+        description: 'Training products and programs',
+        isActive: true,
+        subscriptionPaid: true,
+      });
+      await store.save();
     }
 
     // --- MULTER LOGIC: Handle uploaded images ---
     let imagesPaths = [];
     if (req.files && req.files.length > 0) {
-      // Loop through uploaded files and extract their paths
-      imagesPaths = req.files.map((file) => file.path);
+      // Store relative path (uploads/filename) so it works as a URL
+      imagesPaths = req.files.map((file) => 'uploads/' + file.filename);
     }
 
     const newProduct = new Product({
       store: store._id,
-      coach: coachId,
+      trainer: trainerId,
       title,
       description,
       category,
@@ -67,6 +77,47 @@ export const getProducts = async (req, res) => {
   }
 };
 
+// @desc    Get all products across the platform
+// @route   GET /api/products
+// @access  Public
+export const getAllProducts = async (req, res) => {
+  try {
+    const filter = { isActive: true };
+    if (req.query.trainerId) {
+      filter.trainer = req.query.trainerId;
+    }
+    
+    const products = await Product.find(filter)
+      .populate('trainer', 'name')
+      .populate('category', 'name'); 
+      
+    res.status(200).json({ count: products.length, products });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch products", error: error.message });
+  }
+};
+
+// @desc    Get all products for the logged in trainer's store
+// @route   GET /api/products/my-store
+// @access  Private (Coach only)
+export const getMyProducts = async (req, res) => {
+  try {
+    const trainerId = req.user.id;
+    const store = await Store.findOne({ trainer: trainerId });
+    
+    if (!store) {
+      return res.status(200).json({ count: 0, products: [] }); // Return empty if no store yet
+    }
+
+    const products = await Product.find({ store: store._id })
+      .populate('category', 'name'); 
+      
+    res.status(200).json({ count: products.length, products });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch your products", error: error.message });
+  }
+};
+
 // @desc    Get single product details
 // @route   GET /api/products/:id
 // @access  Public
@@ -74,7 +125,7 @@ export const getProductById = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id)
       .populate('store', 'name logo')
-      .populate('coach', 'name')
+      .populate('trainer', 'name')
       .populate('category', 'name');
 
     if (!product) {
@@ -89,11 +140,11 @@ export const getProductById = async (req, res) => {
 
 // @desc    Update a product
 // @route   PUT /api/products/:id
-// @access  Private (Coach only)
+// @access  Private (Trainer only)
 export const updateProduct = async (req, res) => {
   try {
     const { title, description, category, price, type, stock, isActive } = req.body;
-    const coachId = req.user.id;
+    const trainerId = req.user.id;
 
     let product = await Product.findById(req.params.id);
 
@@ -101,7 +152,7 @@ export const updateProduct = async (req, res) => {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    if (product.coach.toString() !== coachId) {
+    if (product.trainer.toString() !== trainerId) {
       return res.status(401).json({ message: "Not authorized to update this product" });
     }
 
@@ -112,7 +163,7 @@ export const updateProduct = async (req, res) => {
     // --- MULTER LOGIC: Handle new uploaded images ---
     let imagesPaths = product.images; // Keep old images by default
     if (req.files && req.files.length > 0) {
-      imagesPaths = req.files.map((file) => file.path); // Replace with new ones if provided
+      imagesPaths = req.files.map((file) => 'uploads/' + file.filename); // Replace with new ones if provided
     }
 
     product = await Product.findByIdAndUpdate(
@@ -129,10 +180,10 @@ export const updateProduct = async (req, res) => {
 
 // @desc    Delete a product
 // @route   DELETE /api/products/:id
-// @access  Private (Coach only)
+// @access  Private (Trainer only)
 export const deleteProduct = async (req, res) => {
   try {
-    const coachId = req.user.id;
+    const trainerId = req.user.id;
     const product = await Product.findById(req.params.id);
 
     if (!product) {
@@ -140,7 +191,7 @@ export const deleteProduct = async (req, res) => {
     }
 
     // Verify ownership
-    if (product.coach.toString() !== coachId) {
+    if (product.trainer.toString() !== trainerId) {
       return res.status(401).json({ message: "Not authorized to delete this product" });
     }
 

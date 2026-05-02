@@ -1,14 +1,18 @@
 import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, Check } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import authService from '../api/authService';
 
 // ── Constants ─────────────────────────────────────────────────────────────
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 5;
 
 const SPORTS_LIST = [
-  'Basketball', 'Football', 'Tennis', 'Swimming', 'Running',
-  'Cycling', 'Yoga', 'Gym', 'Soccer', 'Baseball', 'Volleyball',
-  'Martial Arts', 'Golf', 'Boxing', 'Athletics',
+  'Football', 'Basketball', 'Tennis', 'Swimming', 'Running', 'Cycling', 'Yoga', 'Gym', 
+  'Soccer', 'Baseball', 'Volleyball', 'Martial Arts', 'Golf', 'Boxing', 'Athletics',
+  'Handball', 'Judo', 'Karate', 'Taekwondo', 'Wrestling', 'Bodybuilding', 'CrossFit',
+  'Rugby', 'Table Tennis', 'Badminton', 'Kickboxing', 'Fencing', 'Archery', 'Rowing',
+  'Climbing', 'Skiing', 'Hockey', 'Cricket', 'Squash', 'Paddle', 'Pilates', 'Zumba',
+  'Powerlifting', 'Calisthenics', 'MMA', 'Muay Thai', 'BJJ', 'Gymnastics'
 ];
 
 const LEVELS = [
@@ -33,6 +37,15 @@ const STYLES = [
 ];
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+const ALGERIAN_WILAYAS = [
+  "Adrar", "Chlef", "Laghouat", "Oum El Bouaghi", "Batna", "Béjaïa", "Biskra", "Béchar", "Blida", "Bouira",
+  "Tamanrasset", "Tébessa", "Tlemcen", "Tiaret", "Tizi Ouzou", "Algiers", "Djelfa", "Jijel", "Sétif", "Saïda",
+  "Skikda", "Sidi Bel Abbès", "Annaba", "Guelma", "Constantine", "Médéa", "Mostaganem", "M'Sila", "Mascara", "Ouargla",
+  "Oran", "El Bayadh", "Illizi", "Bordj Bou Arréridj", "Boumerdès", "El Tarf", "Tindouf", "Tissemsilt", "El Oued", "Khenchela",
+  "Souk Ahras", "Tipaza", "Mila", "Aïn Defla", "Naâma", "Aïn Témouchent", "Ghardaïa", "Relizane", "El M'Ghair", "El Meniaa",
+  "Ouled Djellal", "Bordj Baji Mokhtar", "Béni Abbès", "Timimoun", "Touggourt", "Djanet", "In Salah", "In Guezzam"
+];
 
 // ── Shared UI ─────────────────────────────────────────────────────────────
 const FieldLabel = ({ children, required }) => (
@@ -157,12 +170,21 @@ const Step1 = ({ data, set }) => {
         </div>
       </div>
 
-      <TextInput
-        label="Location" required
-        placeholder="New York, NY"
-        value={data.location}
-        onChange={e => set({ ...data, location: e.target.value })}
-      />
+      <div>
+        <FieldLabel required>Location (Wilaya)</FieldLabel>
+        <select
+          value={data.location}
+          onChange={e => set({ ...data, location: e.target.value })}
+          required
+          className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/30 transition-all"
+        >
+          <option value="">Select Wilaya</option>
+          {ALGERIAN_WILAYAS.map(w => (
+            <option key={w} value={w}>{w}</option>
+          ))}
+          <option value="Online">Online / Remote</option>
+        </select>
+      </div>
 
       {/* Sports multi-select */}
       <div>
@@ -279,8 +301,100 @@ const Step3 = ({ data, set }) => {
   );
 };
 
-// Step 4: Additional Information + Summary
-const Step4 = ({ data, set }) => (
+// Step 4: Verification
+const Step4 = ({ data, set, next }) => {
+  const [otpSent, setOtpSent] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  const handleSendOtp = async () => {
+    setLoading(true);
+    setError('');
+    setSuccess('');
+    try {
+      await authService.sendOtp(data.email);
+      setOtpSent(true);
+      setSuccess('Verification code sent to your email!');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to send verification code.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerify = async () => {
+    setLoading(true);
+    setError('');
+    setSuccess('');
+    try {
+      await authService.verifyOtp(data.email, otp);
+      set({ ...data, isVerified: true });
+      setSuccess('Email verified successfully!');
+      setTimeout(() => next(), 1000); // Auto-advance to next step
+    } catch (err) {
+      setError(err.response?.data?.message || 'Invalid or expired code.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <h2 className="text-xl font-black text-slate-900 dark:text-white mb-5">Email Verification</h2>
+      <p className="text-sm text-slate-500 dark:text-slate-400">
+        Before completing your profile, we need to verify your email address.
+      </p>
+
+      {error && <div className="p-3 bg-red-50 text-red-600 rounded-xl text-sm font-semibold">{error}</div>}
+      {success && <div className="p-3 bg-green-50 text-green-600 rounded-xl text-sm font-semibold">{success}</div>}
+
+      {!data.isVerified && !otpSent && (
+        <button
+          type="button"
+          onClick={handleSendOtp}
+          disabled={loading || !data.email}
+          className="w-full bg-indigo-600 text-white font-bold py-3 rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-50"
+        >
+          {loading ? 'Sending...' : 'Send Verification Code'}
+        </button>
+      )}
+
+      {!data.isVerified && otpSent && (
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Verification Code</label>
+            <input
+              type="text"
+              placeholder="123456"
+              value={otp}
+              onChange={e => setOtp(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 text-sm focus:outline-none focus:border-indigo-500"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={handleVerify}
+            disabled={loading || otp.length < 5}
+            className="w-full bg-indigo-600 text-white font-bold py-3 rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-50"
+          >
+            {loading ? 'Verifying...' : 'Verify Code'}
+          </button>
+        </div>
+      )}
+
+      {data.isVerified && (
+        <div className="p-4 bg-green-50 rounded-xl flex items-center justify-center gap-2 text-green-700 font-bold">
+          <Check size={20} /> Email Verified
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Step 5: Additional Information + Summary
+const Step5 = ({ data, set }) => (
   <div className="space-y-6">
     <h2 className="text-xl font-black text-slate-900 dark:text-white mb-5">Additional Information</h2>
 
@@ -319,7 +433,7 @@ const Step4 = ({ data, set }) => (
 
 // ── Main Wizard ───────────────────────────────────────────────────────────
 const STEP_LABELS = [
-  'Basic Info', 'Athletic Profile', 'Preferences', 'Additional',
+  'Basic Info', 'Athletic Profile', 'Preferences', 'Verification', 'Additional',
 ];
 
 const INITIAL = {
@@ -330,23 +444,64 @@ const INITIAL = {
   // Step 3
   style: 'flexible', availability: [],
   // Step 4
-  reason: '',
+  reason: '', isVerified: false,
 };
 
 const AthleteSignUp = () => {
   const [step, setStep]     = useState(1);
   const [data, setData]     = useState(INITIAL);
   const [loading, setLoad]  = useState(false);
+  const [error, setError]   = useState('');
   const navigate            = useNavigate();
 
   const progress = (step / TOTAL_STEPS) * 100;
 
-  const next = () => { if (step < TOTAL_STEPS) setStep(s => s + 1); };
+  const next = () => { 
+    if (step === 1) {
+      if (!data.name || !data.email || !data.password || !data.age || !data.gender || !data.location) {
+        setError('Please fill in all required fields to continue.');
+        return;
+      }
+    }
+    if (step === 4 && !data.isVerified) {
+      setError('Please verify your email to continue.');
+      return;
+    }
+    if (step < TOTAL_STEPS) {
+      setStep(s => s + 1); 
+      setError('');
+    }
+  };
   const back = () => { if (step > 1) setStep(s => s - 1); };
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
     setLoad(true);
-    setTimeout(() => { setLoad(false); navigate('/login/athlete'); }, 1500);
+    setError('');
+    try {
+      // Map wizard fields → backend expected fields
+      const payload = {
+        name: data.name,
+        email: data.email,
+        password: data.password,
+        location: data.location || '',
+        level: data.level || 'beginner',
+        fitnessGoals: data.goal ? [data.goal] : [],
+        sports: data.sports || [],
+        age: data.age || '',
+        gender: data.gender || '',
+        goal: data.goal || '',
+        style: data.style || '',
+        availability: data.availability || [],
+        reason: data.reason || '',
+        isVerified: data.isVerified,
+      };
+      await authService.athleteSignup(payload);
+      navigate('/login/athlete');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Signup failed. Please try again.');
+    } finally {
+      setLoad(false);
+    }
   };
 
   return (
@@ -397,7 +552,8 @@ const AthleteSignUp = () => {
           {step === 1 && <Step1 data={data} set={setData} />}
           {step === 2 && <Step2 data={data} set={setData} />}
           {step === 3 && <Step3 data={data} set={setData} />}
-          {step === 4 && <Step4 data={data} set={setData} />}
+          {step === 4 && <Step4 data={data} set={setData} next={next} />}
+          {step === 5 && <Step5 data={data} set={setData} />}
 
           {/* Navigation buttons */}
           <div className="flex items-center justify-between mt-8 pt-6 border-t border-slate-100 dark:border-slate-700">
@@ -414,7 +570,8 @@ const AthleteSignUp = () => {
               <button
                 type="button"
                 onClick={next}
-                className="flex items-center gap-2 bg-indigo-600 text-white text-sm font-bold px-6 py-2.5 rounded-xl hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-500/20"
+                disabled={step === 4 && !data.isVerified}
+                className="flex items-center gap-2 bg-indigo-600 text-white text-sm font-bold px-6 py-2.5 rounded-xl hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-500/20 disabled:opacity-50"
               >
                 Next <ChevronRight size={16} />
               </button>

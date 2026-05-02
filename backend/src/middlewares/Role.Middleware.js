@@ -1,44 +1,48 @@
 // middleware/role.middleware.js
 
 // ===============================
-// COACH ONLY
+// TRAINER ONLY
 // ===============================
-export const isCoach = (req, res, next) => {
+export const isTrainer = (req, res, next) => {
   if (!req.user) {
     return res.status(401).json({
       message: "Not authenticated",
     });
   }
 
-  if (req.user.role !== "coach") {
+  if (req.user.role !== "trainer") {
     return res.status(403).json({
-      message: "Access denied: Coach only",
+      message: "Access denied: Trainer only",
     });
   }
 
   next();
 };
 
-
+// Aliasing for compatibility
+export const isCoach = isTrainer;
 
 // ===============================
-// TRAINEE ONLY
+// ATHLETE ONLY
 // ===============================
-export const isTrainee = (req, res, next) => {
+export const isAthlete = (req, res, next) => {
   if (!req.user) {
     return res.status(401).json({
       message: "Not authenticated",
     });
   }
 
-  if (req.user.role !== "trainee") {
+  if (req.user.role !== "athlete") {
     return res.status(403).json({
-      message: "Access denied: Trainee only",
+      message: "Access denied: Athlete only",
     });
   }
 
   next();
 };
+
+// Aliasing for compatibility
+export const isTrainee = isAthlete;
 
 
 

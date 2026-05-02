@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Filter, ChevronDown, Edit2, Trash2, Eye, CheckCircle, XCircle } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
+import { productService } from '../api/dataService';
+import { getImageUrl, FALLBACK_PRODUCT_IMAGE } from '../utils/imageUrl';
 
 const FILTERS = ['All', 'Training Programs', 'Video Courses', 'Equipment', 'Nutrition Guides', 'Mental Training'];
 
@@ -12,17 +14,14 @@ const BADGE_STYLES = {
   NEW: 'bg-primary-blue text-white',
 };
 
-const initialProducts = [
-  { id: 1, title: '12-Week Basketball Training Program', trainer: 'TED LASSO', price: '$299', badge: 'POPULAR', category: 'Training Programs', image: 'https://images.unsplash.com/photo-1546519638405-a2c5ba50a55b?auto=format&fit=crop&q=80&w=400' },
-  { id: 2, title: 'Elite Defense Masterclass', trainer: 'TED LASSO', price: '$149', originalPrice: '$180', badge: 'SALE', category: 'Video Courses', image: 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=400' },
-  { id: 3, title: 'Premium Athlete Equipment Bundle', trainer: 'TED LASSO', price: '$399', badge: 'NEW', category: 'Equipment', image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=400' },
-  { id: 4, title: 'Sports Nutrition & Meal Planning Guide', trainer: 'TED LASSO', price: '$79', badge: null, category: 'Nutrition Guides', image: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&q=80&w=400' },
-  { id: 5, title: 'Mental Performance & Winning Mindset', trainer: 'TED LASSO', price: '$129', badge: 'POPULAR', category: 'Mental Training', image: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&q=80&w=400' },
-  { id: 6, title: 'Speed & Agility Accelerator', trainer: 'TED LASSO', price: '$189', badge: 'NEW', category: 'Training Programs', image: 'https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?auto=format&fit=crop&q=80&w=400' },
-];
+
 
 const ProductCard = ({ product, onDelete }) => {
   const [hovered, setHovered] = useState(false);
+
+  const displayImage = product.images && product.images.length > 0
+    ? getImageUrl(product.images[0])
+    : FALLBACK_PRODUCT_IMAGE;
 
   return (
     <motion.div
@@ -36,11 +35,11 @@ const ProductCard = ({ product, onDelete }) => {
     >
       {/* Image */}
       <div className="relative aspect-[4/3] overflow-hidden bg-slate-200 dark:bg-dark-border">
-        <img src={product.image} alt={product.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+        <img src={displayImage} alt={product.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
 
         {/* Badge */}
         {product.badge && (
-          <span className={`absolute top-2 left-2 text-[10px] font-black px-2 py-0.5 rounded ${BADGE_STYLES[product.badge]}`}>
+          <span className={`absolute top-2 left-2 text-[10px] font-black px-2 py-0.5 rounded ${BADGE_STYLES[product.badge] || 'bg-slate-900 text-white'}`}>
             {product.badge}
           </span>
         )}
@@ -54,19 +53,19 @@ const ProductCard = ({ product, onDelete }) => {
               exit={{ opacity: 0 }}
               className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center gap-2"
             >
-              <Link to={`/store/product/${product.id}`}>
+              <Link to={`/store/product/${product._id}`}>
                 <button className="bg-white text-slate-900 text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors">
                   VIEW PRODUCT
                 </button>
               </Link>
               <div className="flex gap-2">
-                <Link to={`/store/product/${product.id}/edit`}>
+                <Link to={`/store/product/${product._id}/edit`}>
                   <button className="bg-white/20 backdrop-blur text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-white/30 border border-white/30 transition-colors">
                     Edit
                   </button>
                 </Link>
                 <button
-                  onClick={() => onDelete(product.id)}
+                  onClick={() => onDelete(product._id)}
                   className="bg-primary-orange/90 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-primary-orange transition-colors"
                 >
                   Delete
@@ -79,17 +78,14 @@ const ProductCard = ({ product, onDelete }) => {
 
       {/* Info */}
       <div className="p-3">
-        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-wider mb-1">{product.trainer}</p>
-        <Link to={`/store/product/${product.id}`}>
+        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-wider mb-1 uppercase">{product.category || 'Category'}</p>
+        <Link to={`/store/product/${product._id}`}>
           <h3 className="text-sm font-bold text-slate-900 dark:text-white hover:text-primary-blue dark:hover:text-primary-blue transition-colors leading-snug line-clamp-2 mb-1">
             {product.title}
           </h3>
         </Link>
         <div className="flex items-center gap-2">
-          <span className="text-sm font-black text-slate-900 dark:text-white">{product.price}</span>
-          {product.originalPrice && (
-            <span className="text-xs text-slate-400 line-through">{product.originalPrice}</span>
-          )}
+          <span className="text-sm font-black text-slate-900 dark:text-white">${product.price}</span>
         </div>
       </div>
     </motion.div>
@@ -98,13 +94,34 @@ const ProductCard = ({ product, onDelete }) => {
 
 const MyStore = () => {
   const [activeFilter, setActiveFilter] = useState('All');
-  const [products, setProducts] = useState(initialProducts);
+  const [products, setProducts] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  React.useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const data = await productService.getMyProducts();
+        setProducts(data.products || []);
+      } catch (error) {
+        console.error('Failed to fetch products:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchProducts();
+  }, []);
 
   const filtered = activeFilter === 'All' ? products : products.filter(p => p.category === activeFilter);
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (confirm('Delete this product?')) {
-      setProducts(prev => prev.filter(p => p.id !== id));
+      try {
+        await productService.delete(id);
+        setProducts(prev => prev.filter(p => p._id !== id));
+      } catch (error) {
+        console.error('Failed to delete product:', error);
+        alert('Failed to delete product. ' + (error.response?.data?.message || ''));
+      }
     }
   };
 
@@ -182,7 +199,7 @@ const MyStore = () => {
           className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5"
         >
           {filtered.map(product => (
-            <ProductCard key={product.id} product={product} onDelete={handleDelete} />
+            <ProductCard key={product._id} product={product} onDelete={handleDelete} />
           ))}
 
           {/* Add Product Cell */}

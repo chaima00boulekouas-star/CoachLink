@@ -17,7 +17,7 @@ const orderItemSchema = new mongoose.Schema(
       index: true,
     },
 
-    coach: {
+    trainer: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       index: true,

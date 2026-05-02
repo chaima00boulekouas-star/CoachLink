@@ -22,7 +22,7 @@ export const protect = async (req, res, next) => {
     }
 
     // verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'change_this_secret');
 
     // get user from DB
     const user = await User.findById(decoded.id).select("-password");
@@ -38,6 +38,7 @@ export const protect = async (req, res, next) => {
 
     next();
   } catch (error) {
+    console.error("Auth middleware error:", error.message);
     return res.status(401).json({
       message: "Not authorized, token failed",
     });
