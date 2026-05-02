@@ -9,7 +9,7 @@ import DashboardLayout from '../components/DashboardLayout';
 const SESSIONS = [
   {
     id: 1,
-    coach: 'Tashi Duncan',
+    trainer: 'Tashi Duncan',
     sport: 'Tennis',
     date: 'Apr 14, 2026',
     time: '10:00 AM',
@@ -20,7 +20,7 @@ const SESSIONS = [
   },
   {
     id: 2,
-    coach: 'Tashi Duncan',
+    trainer: 'Tashi Duncan',
     sport: 'Tennis',
     date: 'Apr 7, 2026',
     time: '11:00 AM',
@@ -32,7 +32,7 @@ const SESSIONS = [
   },
   {
     id: 3,
-    coach: 'Marcus Johnson',
+    trainer: 'Marcus Johnson',
     sport: 'Football',
     date: 'Mar 28, 2026',
     time: '3:00 PM',
@@ -44,7 +44,7 @@ const SESSIONS = [
   },
   {
     id: 4,
-    coach: 'Elena Williams',
+    trainer: 'Elena Williams',
     sport: 'Basketball',
     date: 'Mar 15, 2026',
     time: '9:30 AM',
@@ -104,7 +104,7 @@ const NewSessionModal = ({ onClose, onSubmit }) => {
         <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-700">
           <div>
             <h2 className="text-xl font-black text-slate-900 dark:text-white">Request a New Session</h2>
-            <p className="text-xs text-slate-500 mt-0.5">Send a session request to your coach</p>
+            <p className="text-xs text-slate-500 mt-0.5">Send a session request to your trainer</p>
           </div>
           <button
             onClick={onClose}
@@ -129,9 +129,9 @@ const NewSessionModal = ({ onClose, onSubmit }) => {
             <>
               {/* Coach */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Select Coach</label>
+                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Select Trainer</label>
                 <select value={form.coachId} onChange={set('coachId')} required className={inputCls}>
-                  <option value="">Choose a coach...</option>
+                  <option value="">Choose a trainer...</option>
                   {COACHES.map((c) => (
                     <option key={c.id} value={c.id}>{c.name} — {c.sport}</option>
                   ))}
@@ -331,7 +331,7 @@ const AthleteSessionsPage = () => {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-3 mb-2 flex-wrap">
                       <div>
-                        <h3 className="font-bold text-slate-900 dark:text-white">{session.coach}</h3>
+                        <h3 className="font-bold text-slate-900 dark:text-white">{session.trainer}</h3>
                         <p className="text-sm font-semibold text-orange-500">{session.sport}</p>
                       </div>
                       <span className={`text-xs font-bold px-3 py-1.5 rounded-xl border flex-shrink-0 ${cfg.className}`}>
@@ -358,9 +358,9 @@ const AthleteSessionsPage = () => {
                 </div>
                 {session.status === 'upcoming' && (
                   <div className="px-5 pb-4 flex gap-2">
-                    <Link to={`/trainer/${COACHES.find((c) => c.name === session.coach)?.id || 1}`}>
+                    <Link to={`/trainer/${COACHES.find((c) => c.name === session.trainer)?.id || 1}`}>
                       <button className="text-xs font-bold text-indigo-600 border border-indigo-200 dark:border-indigo-800 px-4 py-2 rounded-xl hover:bg-indigo-50 dark:hover:bg-indigo-900/10 transition-colors">
-                        View Coach
+                        View Trainer
                       </button>
                     </Link>
                   </div>

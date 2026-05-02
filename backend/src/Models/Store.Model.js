@@ -4,7 +4,7 @@ import mongoose from "mongoose";
 
 const storeSchema = new mongoose.Schema(
   {
-    coach: {
+    trainer: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
@@ -44,6 +44,6 @@ const storeSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-storeSchema.index({ coach: 1, isActive: 1 });
+storeSchema.index({ trainer: 1, isActive: 1 });
 
 export default mongoose.model("Store", storeSchema);

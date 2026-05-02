@@ -3,7 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, User, ShoppingBag, Users, FileText,
-  Star, Settings, LogOut, Dumbbell, X, Search, Bell, Calendar
+  Star, Settings, LogOut, Dumbbell, X, Search, Bell, Calendar, MessageCircle
 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../redux/store';
@@ -14,6 +14,7 @@ const trainerNavItems = [
   { to: '/profile/me', icon: User, label: 'My Profile' },
   { to: '/store', icon: ShoppingBag, label: 'My Store' },
   { to: '/athletes', icon: Users, label: 'Athletes' },
+  { to: '/chat', icon: MessageCircle, label: 'Messages' },
   { to: '/requests', icon: FileText, label: 'Requests' },
   { to: '/favorites', icon: Star, label: 'Favourites' },
 ];
@@ -24,6 +25,7 @@ const athleteNavItems = [
   { to: '/coaches',              icon: Search,          label: 'Find Trainers' },
   { to: '/athlete/store',        icon: ShoppingBag,     label: 'Store' },
   { to: '/athlete/sessions',     icon: Calendar,        label: 'My Sessions' },
+  { to: '/chat',                 icon: MessageCircle,   label: 'Messages' },
   { to: '/requests',             icon: FileText,        label: 'My Requests' },
   { to: '/athlete/notifications',icon: Bell,            label: 'Notifications' },
   { to: '/athlete/profile',      icon: User,            label: 'My Profile' },

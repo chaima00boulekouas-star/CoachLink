@@ -1,16 +1,29 @@
 import React, { useState, useRef } from 'react';
 import { Upload, Check, ChevronDown } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import authService from '../api/authService';
 
 // ── Constants ─────────────────────────────────────────────────────────────
 const SPORTS_LIST = [
-  'Basketball', 'Football', 'Tennis', 'Swimming', 'Running', 'Cycling',
-  'Yoga', 'Gym / Fitness', 'Soccer', 'Baseball', 'Volleyball',
-  'Martial Arts', 'Golf', 'Boxing', 'Athletics', 'CrossFit', 'Pilates',
+  'Football', 'Basketball', 'Tennis', 'Swimming', 'Running', 'Cycling', 'Yoga', 'Gym', 
+  'Soccer', 'Baseball', 'Volleyball', 'Martial Arts', 'Golf', 'Boxing', 'Athletics',
+  'Handball', 'Judo', 'Karate', 'Taekwondo', 'Wrestling', 'Bodybuilding', 'CrossFit',
+  'Rugby', 'Table Tennis', 'Badminton', 'Kickboxing', 'Fencing', 'Archery', 'Rowing',
+  'Climbing', 'Skiing', 'Hockey', 'Cricket', 'Squash', 'Paddle', 'Pilates', 'Zumba',
+  'Powerlifting', 'Calisthenics', 'MMA', 'Muay Thai', 'BJJ', 'Gymnastics'
 ];
 
-const LEVELS = ['Beginner', 'Intermediate', 'Advanced', 'Professional'];
+const EXPERIENCE_LEVELS = ['Less than 1 year', '1-3 years', '3-5 years', '5-10 years', '10+ years'];
 const DAYS   = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+const ALGERIAN_WILAYAS = [
+  "Adrar", "Chlef", "Laghouat", "Oum El Bouaghi", "Batna", "Béjaïa", "Biskra", "Béchar", "Blida", "Bouira",
+  "Tamanrasset", "Tébessa", "Tlemcen", "Tiaret", "Tizi Ouzou", "Algiers", "Djelfa", "Jijel", "Sétif", "Saïda",
+  "Skikda", "Sidi Bel Abbès", "Annaba", "Guelma", "Constantine", "Médéa", "Mostaganem", "M'Sila", "Mascara", "Ouargla",
+  "Oran", "El Bayadh", "Illizi", "Bordj Bou Arréridj", "Boumerdès", "El Tarf", "Tindouf", "Tissemsilt", "El Oued", "Khenchela",
+  "Souk Ahras", "Tipaza", "Mila", "Aïn Defla", "Naâma", "Aïn Témouchent", "Ghardaïa", "Relizane", "El M'Ghair", "El Meniaa",
+  "Ouled Djellal", "Bordj Baji Mokhtar", "Béni Abbès", "Timimoun", "Touggourt", "Djanet", "In Salah", "In Guezzam"
+];
 
 // ── Shared UI ─────────────────────────────────────────────────────────────
 const FieldLabel = ({ children, required }) => (
@@ -138,16 +151,49 @@ const INITIAL = {
 const TrainerSignUp = () => {
   const [form, setForm]     = useState(INITIAL);
   const [loading, setLoad]  = useState(false);
+  const [error, setError]   = useState('');
+  const [isVerified, setIsVerified] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otpError, setOtpError] = useState('');
+  const [otpSuccess, setOtpSuccess] = useState('');
   const navigate            = useNavigate();
 
   const set     = (key, val) => setForm(p => ({ ...p, [key]: val }));
-  const isValid = form.name && form.email && form.password && form.sports.length > 0 && form.location && form.idDoc && form.certDocs;
+  const isValid = form.name && form.email && form.password && form.sports.length > 0 && form.location && form.idDoc && form.certDocs && isVerified;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!isValid) return;
     setLoad(true);
-    setTimeout(() => { setLoad(false); navigate('/login/trainer'); }, 1500);
+    setError('');
+    try {
+      // Send JSON payload to /api/users/register
+      const payload = {
+        name: form.name,
+        email: form.email,
+        password: form.password,
+        location: form.location,
+        // Trainer-specific fields
+        specialization: form.sports.join(', '),
+        certifications: form.certifications,
+        experience: form.experience,
+        philosophy: form.philosophy,
+        achievements: form.achievements,
+        sports: form.sports,
+        levels: form.levels,
+        availability: form.availability,
+        price: form.price,
+        isVerified: isVerified,
+      };
+      await authService.trainerSignup(payload);
+      navigate('/login/trainer');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Signup failed. Please try again.');
+    } finally {
+      setLoad(false);
+    }
   };
 
   const toggleLevel = (l) =>
@@ -214,16 +260,90 @@ const TrainerSignUp = () => {
               </div>
 
               <div>
-                <FieldLabel required>Location</FieldLabel>
-                <input
-                  type="text"
-                  placeholder="City, State (or 'Online' for remote training)"
+                <FieldLabel required>Location (Wilaya)</FieldLabel>
+                <select
                   value={form.location}
                   onChange={e => set('location', e.target.value)}
                   required
                   className={inputCls}
-                />
+                >
+                  <option value="">Select Wilaya</option>
+                  {ALGERIAN_WILAYAS.map(w => (
+                    <option key={w} value={w}>{w}</option>
+                  ))}
+                  <option value="Online">Online / Remote</option>
+                </select>
               </div>
+            </div>
+
+            {/* ── Email Verification ────────────────────────────────── */}
+            <SectionTitle>Email Verification</SectionTitle>
+            <div className="space-y-5">
+              {!isVerified && !otpSent && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!form.email) return;
+                    setOtpLoading(true); setOtpError(''); setOtpSuccess('');
+                    try {
+                      await authService.sendOtp(form.email);
+                      setOtpSent(true);
+                      setOtpSuccess('Verification code sent to your email!');
+                    } catch (err) {
+                      setOtpError(err.response?.data?.message || 'Failed to send code.');
+                    } finally {
+                      setOtpLoading(false);
+                    }
+                  }}
+                  disabled={otpLoading || !form.email}
+                  className="w-full bg-orange-500 text-white font-bold py-3 rounded-xl hover:opacity-90 disabled:opacity-50 transition-opacity"
+                >
+                  {otpLoading ? 'Sending...' : 'Send Verification Code'}
+                </button>
+              )}
+
+              {!isVerified && otpSent && (
+                <div className="space-y-4">
+                  <div>
+                    <FieldLabel required>Verification Code</FieldLabel>
+                    <input
+                      type="text"
+                      placeholder="123456"
+                      value={otp}
+                      onChange={e => setOtp(e.target.value)}
+                      className={inputCls}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setOtpLoading(true); setOtpError(''); setOtpSuccess('');
+                      try {
+                        await authService.verifyOtp(form.email, otp);
+                        setIsVerified(true);
+                        setOtpSuccess('Email verified successfully!');
+                      } catch (err) {
+                        setOtpError(err.response?.data?.message || 'Invalid or expired code.');
+                      } finally {
+                        setOtpLoading(false);
+                      }
+                    }}
+                    disabled={otpLoading || otp.length < 5}
+                    className="w-full bg-orange-500 text-white font-bold py-3 rounded-xl hover:opacity-90 disabled:opacity-50 transition-opacity"
+                  >
+                    {otpLoading ? 'Verifying...' : 'Verify Code'}
+                  </button>
+                </div>
+              )}
+
+              {otpError && <div className="p-3 bg-red-50 text-red-600 rounded-xl text-sm font-semibold">{otpError}</div>}
+              {otpSuccess && <div className="p-3 bg-green-50 text-green-600 rounded-xl text-sm font-semibold">{otpSuccess}</div>}
+
+              {isVerified && (
+                <div className="p-4 bg-green-50 rounded-xl flex items-center justify-center gap-2 text-green-700 font-bold">
+                  <Check size={20} /> Email Verified
+                </div>
+              )}
             </div>
 
             {/* ── Credentials ───────────────────────────────────────── */}
@@ -258,18 +378,6 @@ const TrainerSignUp = () => {
               <p className="text-xs text-slate-400 -mt-3">Accepted formats: JPG, PNG, PDF (max 5MB each)</p>
 
               <div>
-                <FieldLabel required>Years of Experience</FieldLabel>
-                <input
-                  type="number"
-                  min="0" max="50"
-                  placeholder="e.g. 5"
-                  value={form.experience}
-                  onChange={e => set('experience', e.target.value)}
-                  className={inputCls}
-                />
-              </div>
-
-              <div>
                 <FieldLabel required>Achievements</FieldLabel>
                 <textarea
                   rows={3}
@@ -296,9 +404,9 @@ const TrainerSignUp = () => {
               </div>
 
               <div>
-                <FieldLabel required>Levels Accepted</FieldLabel>
+                <FieldLabel required>Experience</FieldLabel>
                 <div className="grid grid-cols-2 gap-1 mt-1">
-                  {LEVELS.map(l => (
+                  {EXPERIENCE_LEVELS.map(l => (
                     <CheckItem
                       key={l} label={l}
                       checked={form.levels.includes(l)}

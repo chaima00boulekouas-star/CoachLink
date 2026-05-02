@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { login } from '../redux/store';
 import logoImg from '../assets/logo.png';
+import authService from '../api/authService';
 
 const AdminLoginPage = () => {
   const [email, setEmail]       = useState('');
@@ -14,20 +15,18 @@ const AdminLoginPage = () => {
   const navigate  = useNavigate();
   const dispatch  = useDispatch();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-    setTimeout(() => {
-      // Mock admin credential check
-      if (email === 'admin@coachlink.com' && password === 'admin123') {
-        dispatch(login({ user: { email, name: 'Admin User' }, role: 'admin' }));
-        navigate('/admin/dashboard');
-      } else {
-        setError('Invalid admin credentials. Use admin@coachlink.com / admin123');
-        setLoading(false);
-      }
-    }, 1000);
+    try {
+      const data = await authService.adminLogin(email, password);
+      dispatch(login({ user: data.user, role: 'admin', token: data.token }));
+      navigate('/admin/dashboard');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Invalid admin credentials.');
+      setLoading(false);
+    }
   };
 
   return (
@@ -96,10 +95,6 @@ const AdminLoginPage = () => {
                     {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
-              </div>
-
-              <div className="pt-1 p-3 rounded-xl bg-indigo-900/20 border border-indigo-800/50 text-xs text-indigo-400 text-center">
-                Demo: <strong>admin@coachlink.com</strong> / <strong>admin123</strong>
               </div>
 
               <button

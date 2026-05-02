@@ -4,13 +4,13 @@ import mongoose from "mongoose";
 
 const sessionSchema = new mongoose.Schema(
   {
-    coach: {
+    trainer: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       index: true,
     },
 
-    trainee: {
+    athlete: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       index: true,
@@ -30,6 +30,6 @@ const sessionSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-sessionSchema.index({ coach: 1, date: -1 });
+sessionSchema.index({ trainer: 1, date: -1 });
 
 export default mongoose.model("Session", sessionSchema);

@@ -1,35 +1,66 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ShoppingCart, Trash2, Plus, Minus, ShoppingBag, ArrowLeft } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
-
-const MOCK_CART = [
-  { id: 1, title: '12-Week Tennis Mastery Guide',     coach: 'Tashi Duncan',   price: 49, qty: 1, image: 'https://images.unsplash.com/photo-1535131749006-b7f58c99034b?auto=format&fit=crop&q=80&w=200' },
-  { id: 5, title: 'Strength & Conditioning Bundle',  coach: 'James Carter',   price: 99, qty: 1, image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=200' },
-];
+import { cartService } from '../api/dataService';
+import api from '../api/axios';
 
 const CartPage = () => {
-  const [items, setItems]         = useState(MOCK_CART);
+  const [items, setItems]         = useState([]);
   const [checked, setChecked]     = useState(false);
   const [processing, setProcess]  = useState(false);
+  const [loading, setLoading]     = useState(true);
 
-  const changeQty = (id, delta) => {
-    setItems((prev) =>
-      prev.map((i) => i.id === id ? { ...i, qty: Math.max(1, i.qty + delta) } : i)
-    );
+  useEffect(() => {
+    const fetchCart = async () => {
+      try {
+        const data = await cartService.getCart();
+        setItems(data.items || data || []);
+      } catch (err) {
+        console.error('Failed to fetch cart:', err);
+        setItems([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCart();
+  }, []);
+
+  const changeQty = async (id, delta) => {
+    const item = items.find(i => (i._id || i.id) === id);
+    if (!item) return;
+    const newQty = Math.max(1, item.qty + delta);
+    setItems(prev => prev.map(i => (i._id || i.id) === id ? { ...i, qty: newQty } : i));
+    try {
+      await cartService.updateQuantity(id, newQty);
+    } catch (err) {
+      console.error('Failed to update quantity:', err);
+    }
   };
-  const remove = (id) => setItems((prev) => prev.filter((i) => i.id !== id));
+
+  const remove = async (id) => {
+    setItems(prev => prev.filter(i => (i._id || i.id) !== id));
+    try {
+      await cartService.removeItem(id);
+    } catch (err) {
+      console.error('Failed to remove item:', err);
+    }
+  };
 
   const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
   const tax      = Math.round(subtotal * 0.08);
   const total    = subtotal + tax;
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     setProcess(true);
-    setTimeout(() => {
-      setProcess(false);
+    try {
+      await api.post('/api/checkout', { items });
       setChecked(true);
-    }, 1800);
+    } catch (err) {
+      console.error('Checkout failed:', err);
+    } finally {
+      setProcess(false);
+    }
   };
 
   return (

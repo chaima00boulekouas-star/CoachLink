@@ -1,33 +1,81 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Save, MapPin } from 'lucide-react';
+import { User, Save, MapPin, Loader2 } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
+import { useSelector, useDispatch } from 'react-redux';
+import { updateUser } from '../redux/store';
+import { authService } from '../api/authService';
 
-const SPORTS = ['Tennis', 'Football', 'Basketball', 'Gym', 'Yoga'];
+const SPORTS = ['Tennis', 'Football', 'Basketball', 'Gym', 'Yoga', 'Boxing', 'Swimming', 'Running'];
 const LEVELS = ['Beginner', 'Intermediate', 'Advanced', 'Competitive'];
 
 const AthleteProfile = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const user = useSelector((s) => s.auth.user);
+  
   const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
   const [profile, setProfile] = useState({
-    firstName: 'Patrick',
-    lastName: 'Zweig',
-    email: 'patrick@example.com',
-    location: 'New York, NY',
-    age: '25',
-    sport: 'Tennis',
-    level: 'Competitive',
-    goal: 'skill-improvement',
+    firstName: user?.name?.split(' ')[0] || '',
+    lastName: user?.name?.split(' ').slice(1).join(' ') || '',
+    email: user?.email || '',
+    location: user?.location || '',
+    age: user?.age || '',
+    sport: Array.isArray(user?.sports) ? user.sports[0] : (user?.sport || 'Tennis'),
+    level: user?.level || 'Beginner',
+    goal: user?.goal || '',
   });
+
+  // Keep state in sync if user object changes
+  useEffect(() => {
+    if (user) {
+      setProfile({
+        firstName: user.name?.split(' ')[0] || '',
+        lastName: user.name?.split(' ').slice(1).join(' ') || '',
+        email: user.email || '',
+        location: user.location || '',
+        age: user.age || '',
+        sport: Array.isArray(user.sports) ? user.sports[0] : (user.sport || 'Tennis'),
+        level: user.level || 'Beginner',
+        goal: user.goal || '',
+      });
+    }
+  }, [user]);
 
   const set = (key) => (e) => setProfile((p) => ({ ...p, [key]: e.target.value }));
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => {
-      setSaved(false);
-      navigate('/athlete/dashboard');
-    }, 1500);
+  const handleSave = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const payload = {
+        name: `${profile.firstName} ${profile.lastName}`.trim(),
+        location: profile.location,
+        age: profile.age,
+        sports: [profile.sport],
+        level: profile.level,
+        goal: profile.goal,
+      };
+      
+      const response = await authService.updateProfile(user.id || user._id, payload);
+      
+      if (response.user) {
+        dispatch(updateUser(response.user));
+        setSaved(true);
+        setTimeout(() => {
+          setSaved(false);
+          navigate('/athlete/profile');
+        }, 1000);
+      }
+    } catch (err) {
+      console.error('Save error:', err);
+      setError(err.response?.data?.message || 'Failed to save profile. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -43,12 +91,10 @@ const AthleteProfile = () => {
 
           {/* Avatar */}
           <div className="flex flex-col sm:flex-row items-center gap-6 mb-8 pb-8 border-b border-slate-100 dark:border-slate-700">
-            <div className="w-24 h-24 rounded-2xl overflow-hidden bg-slate-200 shadow-md">
-              <img
-                src="https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&q=80&w=400"
-                alt="Profile"
-                className="w-full h-full object-cover"
-              />
+            <div className="w-24 h-24 rounded-2xl overflow-hidden bg-indigo-800 flex items-center justify-center shadow-md">
+              <span className="text-4xl font-black text-white/40">
+                {profile.firstName ? profile.firstName.charAt(0) : 'A'}
+              </span>
             </div>
             <div className="text-center sm:text-left">
               <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-1">Profile Photo</h2>
@@ -161,15 +207,24 @@ const AthleteProfile = () => {
           </div>
 
           {/* Save */}
-          <div className="pt-6 border-t border-slate-100 dark:border-slate-700 flex justify-end">
-            <button
-              type="button"
-              onClick={handleSave}
-              className="inline-flex items-center gap-2 bg-indigo-600 hover:opacity-90 text-white font-bold px-8 py-3 rounded-xl transition-opacity shadow-lg shadow-indigo-500/20"
-            >
-              <Save size={16} />
-              {saved ? 'Saved!' : 'Save Profile'}
-            </button>
+          <div className="pt-6 border-t border-slate-100 dark:border-slate-700 space-y-4">
+            {error && (
+              <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/30 rounded-xl text-red-600 dark:text-red-400 text-sm font-medium">
+                {error}
+              </div>
+            )}
+            
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={loading}
+                className="inline-flex items-center gap-2 bg-indigo-600 hover:opacity-90 disabled:opacity-50 text-white font-bold px-8 py-3 rounded-xl transition-all shadow-lg shadow-indigo-500/20"
+              >
+                {loading ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                {loading ? 'Saving...' : saved ? 'Saved!' : 'Save Profile'}
+              </button>
+            </div>
           </div>
         </div>
       </div>

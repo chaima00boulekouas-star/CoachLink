@@ -5,6 +5,7 @@ import DashboardLayout from '../components/DashboardLayout';
 import Input from '../components/Input';
 import Button from '../components/Button';
 import { useNavigate } from 'react-router-dom';
+import { productService } from '../api/dataService';
 
 const CATEGORIES = ['Training Programs', 'Video Courses', 'Equipment', 'Nutrition Guides', 'Mental Training'];
 const FORMATS = ['Video', 'Physical', 'PDF Guide', 'Live Session'];
@@ -13,7 +14,8 @@ const LEVELS = ['Beginner', 'Intermediate', 'Advanced', 'All Levels'];
 const AddProductPage = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
-  const [, setImages] = useState([]);
+  const [images, setImages] = useState([]);
+  const [error, setError] = useState('');
   const [form, setForm] = useState({
     title: '',
     description: '',
@@ -24,13 +26,43 @@ const AddProductPage = () => {
     badge: '',
   });
 
-  const handleSave = (e) => {
+  const handleImageChange = (e) => {
+    if (e.target.files) {
+      setImages(Array.from(e.target.files));
+    }
+  };
+
+  const handleSave = async (e) => {
     e.preventDefault();
+    setError('');
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
+    
+    try {
+      const formData = new FormData();
+      formData.append('title', form.title);
+      formData.append('description', form.description);
+      formData.append('price', form.price);
+      formData.append('category', form.category);
+      
+      let type = 'digital';
+      if (form.format === 'Physical' || form.category === 'Equipment') type = 'physical';
+      if (form.format === 'Video' || form.format === 'Live Session') type = 'program';
+      formData.append('type', type);
+      
+      formData.append('stock', 10);
+      
+      images.forEach(img => {
+        formData.append('images', img);
+      });
+      
+      await productService.create(formData);
       navigate('/store');
-    }, 1500);
+    } catch (err) {
+      console.error(err);
+      setError(err.response?.data?.message || 'Failed to create product');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -42,6 +74,7 @@ const AddProductPage = () => {
         </div>
 
         <form onSubmit={handleSave} className="space-y-6">
+          {error && <div className="p-4 bg-red-50 text-red-600 rounded-xl font-semibold text-sm">{error}</div>}
           {/* Basic Info */}
           <div className="bg-white dark:bg-dark-card rounded-2xl border border-slate-100 dark:border-dark-border shadow-sm p-6 space-y-4">
             <h2 className="font-black text-slate-900 dark:text-white text-sm uppercase tracking-wider">Product Details</h2>
@@ -113,13 +146,16 @@ const AddProductPage = () => {
           {/* Images */}
           <div className="bg-white dark:bg-dark-card rounded-2xl border border-slate-100 dark:border-dark-border shadow-sm p-6">
             <h2 className="font-black text-slate-900 dark:text-white text-sm uppercase tracking-wider mb-4">Product Images</h2>
-            <div className="border-2 border-dashed border-slate-200 dark:border-dark-border rounded-2xl p-12 flex flex-col items-center justify-center text-center hover:border-primary-blue hover:bg-indigo-50 dark:hover:bg-indigo-900/10 transition-all cursor-pointer group">
+            <label className="border-2 border-dashed border-slate-200 dark:border-dark-border rounded-2xl p-12 flex flex-col items-center justify-center text-center hover:border-primary-blue hover:bg-indigo-50 dark:hover:bg-indigo-900/10 transition-all cursor-pointer group">
+              <input type="file" multiple className="hidden" accept="image/*" onChange={handleImageChange} />
               <div className="w-14 h-14 bg-slate-100 dark:bg-dark-border rounded-2xl flex items-center justify-center mb-4 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/30 transition-colors">
                 <Upload size={24} className="text-slate-400 group-hover:text-primary-blue transition-colors" />
               </div>
-              <p className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Drop images here or click to upload</p>
+              <p className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">
+                {images.length > 0 ? `${images.length} images selected` : 'Drop images here or click to upload'}
+              </p>
               <p className="text-xs text-slate-400">PNG, JPG, WEBP up to 10MB each</p>
-            </div>
+            </label>
           </div>
 
           {/* Submit */}

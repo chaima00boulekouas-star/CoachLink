@@ -10,7 +10,7 @@ const productSchema = new mongoose.Schema(
       index: true,
     },
 
-    coach: {
+    trainer: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       index: true,
@@ -25,8 +25,7 @@ const productSchema = new mongoose.Schema(
     description: String,
 
     category: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Category",
+      type: String,
       index: true,
     },
 

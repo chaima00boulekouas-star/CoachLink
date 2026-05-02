@@ -1,7 +1,5 @@
-// routes/index.js
-
 import express from "express";
-import coachRoutes from "./CoachRoutes.js";
+import trainerRoutes from "./TrainerRoutes.js";
 import storeRoutes from "./StoreRoutes.js";
 import productRoutes from "./ProductRoutes.js";
 import orderRoutes from "./OrderRoutes.js";
@@ -10,10 +8,12 @@ import reviewRoutes from "./ReviewRoutes.js";
 import paymentRoutes from "./PaymentRoutes.js";
 import dashboardRoutes from "./DashboardRoutes.js";
 import userRoutes from "./UserRoutes.js";
+import chatRoutes from "./ChatRoutes.js";
 
 const router = express.Router();
 
-router.use("/api/coach-profiles", coachRoutes);
+router.use("/api/trainer-profiles", trainerRoutes);
+router.use("/api/coach-profiles", trainerRoutes); // Keep for compatibility
 router.use("/api/stores", storeRoutes);
 router.use("/api/products", productRoutes);
 router.use("/api/orders", orderRoutes);
@@ -22,5 +22,6 @@ router.use("/api/reviews", reviewRoutes);
 router.use("/api/payments", paymentRoutes);
 router.use("/api/dashboard", dashboardRoutes);
 router.use("/api/users", userRoutes);
+router.use("/api/chat", chatRoutes);
 
 export default router;

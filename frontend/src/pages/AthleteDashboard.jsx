@@ -5,11 +5,12 @@ import {
   Edit2, CheckCircle2, Calendar, MapPin
 } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
+import { useSelector } from 'react-redux';
 
 const RECENT_SESSIONS = [
   {
     id: 1,
-    coach: 'Marcus Johnson',
+    trainer: 'Marcus Johnson',
     sport: 'Tennis',
     duration: '6 months',
     result: 'Improved shooting percentage from 42% to 58%',
@@ -17,7 +18,7 @@ const RECENT_SESSIONS = [
   },
   {
     id: 2,
-    coach: 'Coach Mike Davis',
+    trainer: 'Coach Mike Davis',
     sport: 'Tennis',
     duration: '1 year',
     result: 'Enhanced defensive positioning and footwork',
@@ -49,13 +50,21 @@ const PerformanceChart = () => (
   </div>
 );
 
-const AthleteDashboard = () => (
+const AthleteDashboard = () => {
+  const user = useSelector((s) => s.auth.user);
+  const name     = user?.name     || 'Athlete';
+  const location = user?.location || '';
+  const sport    = Array.isArray(user?.sports) ? user.sports[0] : (user?.sport || '');
+  const level    = user?.level    || '';
+  const age      = user?.age      || '';
+
+  return (
   <DashboardLayout>
     <div className="max-w-6xl mx-auto space-y-6">
 
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-black text-slate-900 dark:text-white">Hello, Patrick Zweig!</h1>
+        <h1 className="text-3xl font-black text-slate-900 dark:text-white">Hello, {name}!</h1>
         <p className="text-slate-500 dark:text-slate-400 mt-1">Track your progress and achieve your goals</p>
       </div>
 
@@ -133,7 +142,7 @@ const AthleteDashboard = () => (
                   <span className="absolute top-5 right-5 text-xs font-bold text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded">
                     {session.year}
                   </span>
-                  <h4 className="font-bold text-slate-900 dark:text-white mb-1">{session.coach}</h4>
+                  <h4 className="font-bold text-slate-900 dark:text-white mb-1">{session.trainer}</h4>
                   <p className="text-xs text-slate-500 mb-2">{session.sport}</p>
                   <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400 mb-2">
                     <Calendar size={12} />
@@ -152,19 +161,21 @@ const AthleteDashboard = () => (
 
           {/* Profile Card */}
           <div className="bg-gradient-to-b from-indigo-600/90 to-indigo-700 rounded-3xl p-5 shadow-lg text-white">
-            <h3 className="font-black text-xl mt-2 mb-1">Patrick Zweig</h3>
+            <h3 className="font-black text-xl mt-2 mb-1">{name}</h3>
             <p className="text-xs text-white/70 flex items-center gap-1 mb-4">
-              <MapPin size={12} /> New York, NY
+              <MapPin size={12} /> {location || 'Location not set'}
             </p>
             <div className="aspect-[4/5] rounded-2xl overflow-hidden bg-slate-700 mb-4">
-              <img
-                src="https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&q=80&w=400"
-                alt="Patrick Zweig"
-                className="w-full h-full object-cover"
-              />
+              <div className="w-full h-full flex items-center justify-center bg-indigo-800 text-white/30 text-6xl font-black">
+                {name.charAt(0)}
+              </div>
             </div>
             <div className="grid grid-cols-3 gap-2 text-center mb-4">
-              {[{ label: 'age', val: '25' }, { label: 'sport', val: 'Tennis' }, { label: 'level', val: 'Pro' }].map((s) => (
+              {[
+                { label: 'age',   val: age   || '—' },
+                { label: 'sport', val: sport || '—' },
+                { label: 'level', val: level || '—' },
+              ].map((s) => (
                 <div key={s.label}>
                   <div className="text-sm font-black">{s.val}</div>
                   <div className="text-[10px] text-white/60">{s.label}</div>
@@ -216,6 +227,7 @@ const AthleteDashboard = () => (
       </div>
     </div>
   </DashboardLayout>
-);
+  );
+};
 
 export default AthleteDashboard;

@@ -4,13 +4,13 @@ import mongoose from "mongoose";
 
 const reviewSchema = new mongoose.Schema(
   {
-    coach: {
+    trainer: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       index: true,
     },
 
-    trainee: {
+    athlete: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },
@@ -27,6 +27,6 @@ const reviewSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-reviewSchema.index({ coach: 1, rating: -1 });
+reviewSchema.index({ trainer: 1, rating: -1 });
 
 export default mongoose.model("Review", reviewSchema);

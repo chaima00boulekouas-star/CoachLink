@@ -4,19 +4,26 @@ import { Link } from 'react-router-dom';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import Input from '../components/Input';
+import authService from '../api/authService';
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
   const [isSent, setIsSent] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleReset = (e) => {
+  const handleReset = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
+    setError('');
+    try {
+      await authService.forgotPassword(email);
       setIsSent(true);
-    }, 1500);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to send reset link. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

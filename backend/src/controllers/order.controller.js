@@ -41,7 +41,7 @@ export const createOrder = async (req, res) => {
         price: dbProduct.price,
         product: dbProduct._id,
         store: dbProduct.store,
-        coach: dbProduct.coach, // Save the reference to the coach who owns this product
+        trainer: dbProduct.trainer, // Save the reference to the trainer who owns this product
         type: dbProduct.type
       });
     }
@@ -71,7 +71,7 @@ export const createOrder = async (req, res) => {
     res.status(500).json({ message: "Server error while creating order", error: error.message });
   }
 };
-// @desc    Get logged in user (Trainee) orders
+// @desc    Get logged in user (Athlete) orders
 // @route   GET /api/orders/myorders
 // @access  Private (Logged in User)
 export const getMyOrders = async (req, res) => {
@@ -87,16 +87,16 @@ export const getMyOrders = async (req, res) => {
   }
 };
 
-// @desc    Get all orders related to a specific Coach
-// @route   GET /api/orders/coach
-// @access  Private (Logged in Coach)
+// @desc    Get all orders related to a specific Trainer
+// @route   GET /api/orders/trainer
+// @access  Private (Logged in Trainer)
 export const getCoachOrders = async (req, res) => {
   try {
-    const coachId = req.user.id;
+    const trainerId = req.user.id;
 
-    // Magic of MongoDB: Search inside the 'items' array to find any product that belongs to this coach
-    // .populate('user', 'name email') fetches the buyer's name and email so the coach can contact them
-    const orders = await Order.find({ "items.coach": coachId })
+    // Magic of MongoDB: Search inside the 'items' array to find any product that belongs to this trainer
+    // .populate('user', 'name email') fetches the buyer's name and email so the trainer can contact them
+    const orders = await Order.find({ "items.trainer": trainerId })
       .populate("user", "name email") 
       .sort({ createdAt: -1 });
 
@@ -104,29 +104,29 @@ export const getCoachOrders = async (req, res) => {
       return res.status(404).json({ message: "No orders found for your products yet." });
     }
 
-    // --- NEW: Filter out items belonging to other coaches ---
+    // --- NEW: Filter out items belonging to other trainers ---
     const filteredOrders = orders.map(order => {
       const orderObj = order.toObject(); // Convert to plain object to manipulate
       
-      // Keep only this coach's items
+      // Keep only this trainer's items
       // Ensure we convert both values to strings to compare safely
-      orderObj.items = orderObj.items.filter(item => item.coach.toString() === coachId.toString());
+      orderObj.items = orderObj.items.filter(item => item.trainer.toString() === trainerId.toString());
       
-      // Calculate how much THIS specific coach made from this order
-      orderObj.coachTotal = orderObj.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      // Calculate how much THIS specific trainer made from this order
+      orderObj.trainerTotal = orderObj.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
       
       return orderObj;
     });
 
     res.status(200).json(filteredOrders);
   } catch (error) {
-    console.error("Get Coach Orders Error:", error);
-    res.status(500).json({ message: "Server error while fetching coach orders", error: error.message });
+    console.error("Get Trainer Orders Error:", error);
+    res.status(500).json({ message: "Server error while fetching trainer orders", error: error.message });
   }
 };
 // @desc    Get order by ID
 // @route   GET /api/orders/:id
-// @access  Private (Logged in User or Coach)
+// @access  Private (Logged in User or Trainer)
 export const getOrderById = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -137,11 +137,11 @@ export const getOrderById = async (req, res) => {
       return res.status(404).json({ message: "Order not found" });
     }
 
-    // SECURITY CHECK: Ensure the logged-in user is either the buyer OR a coach involved in this order
+    // SECURITY CHECK: Ensure the logged-in user is either the buyer OR a trainer involved in this order
     const isBuyer = order.user._id.toString() === userId.toString();
-    const isCoachOwner = order.items.some(item => item.coach && item.coach.toString() === userId.toString());
+    const isTrainerOwner = order.items.some(item => item.trainer && item.trainer.toString() === userId.toString());
 
-    if (!isBuyer && !isCoachOwner) {
+    if (!isBuyer && !isTrainerOwner) {
       return res.status(403).json({ message: "Not authorized to view this order details" });
     }
 
@@ -168,10 +168,10 @@ export const updateOrderStatus = async (req, res) => {
       return res.status(404).json({ message: "Order not found" });
     }
 
-    // SECURITY CHECK: Ensure this specific coach actually sold an item in this order
-    const isCoachOwner = order.items.some(item => item.coach && item.coach.toString() === userId.toString());
+    // SECURITY CHECK: Ensure this specific trainer actually sold an item in this order
+    const isTrainerOwner = order.items.some(item => item.trainer && item.trainer.toString() === userId.toString());
     
-    if (!isCoachOwner) {
+    if (!isTrainerOwner) {
       return res.status(403).json({ message: "Not authorized to update this order's status" });
     }
 

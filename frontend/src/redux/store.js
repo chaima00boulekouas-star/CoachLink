@@ -13,21 +13,41 @@ const authSlice = createSlice({
   initialState: {
     user:            savedAuth?.user            ?? null,
     isAuthenticated: savedAuth?.isAuthenticated ?? false,
-    role:            savedAuth?.role            ?? null, // 'athlete' | 'trainer'
+    role:            savedAuth?.role            ?? null, // 'athlete' | 'trainer' | 'admin'
+    token:           savedAuth?.token           ?? null,
   },
   reducers: {
     login: (state, action) => {
       state.user = action.payload.user;
       state.role = action.payload.role;
+      state.token = action.payload.token || null;
       state.isAuthenticated = true;
-      // Save to localStorage so role persists on page refresh
-      try { localStorage.setItem('cl_auth', JSON.stringify({ user: state.user, role: state.role, isAuthenticated: true })); } catch { /* noop */ }
+      try {
+        localStorage.setItem('cl_auth', JSON.stringify({
+          user: state.user,
+          role: state.role,
+          token: state.token,
+          isAuthenticated: true,
+        }));
+      } catch { /* noop */ }
     },
     logout: (state) => {
       state.user = null;
       state.role = null;
+      state.token = null;
       state.isAuthenticated = false;
       try { localStorage.removeItem('cl_auth'); } catch { /* noop */ }
+    },
+    updateUser: (state, action) => {
+      state.user = { ...state.user, ...action.payload };
+      try {
+        localStorage.setItem('cl_auth', JSON.stringify({
+          user: state.user,
+          role: state.role,
+          token: state.token,
+          isAuthenticated: true,
+        }));
+      } catch { /* noop */ }
     },
   },
 });
@@ -36,7 +56,7 @@ const authSlice = createSlice({
 const uiSlice = createSlice({
   name: 'ui',
   initialState: {
-    notificationCount: 3,
+    notificationCount: 0,
     sidebarOpen: true,
     activeFilter: 'All',
   },
@@ -53,53 +73,26 @@ const uiSlice = createSlice({
   },
 });
 
-// Requests slice
+// Requests slice – stores items fetched from API
 const requestsSlice = createSlice({
   name: 'requests',
   initialState: {
-    items: [
-      {
-        id: 1,
-        name: 'Marcus Johnson',
-        sport: 'Football',
-        message: "Hi! I'd like to improve my shooting and defensive skills.",
-        sentDate: '2025-02-20',
-        responseDate: '2025-02-21',
-        status: 'accepted',
-        contact: { phone: '+1 (555) 123-4567', email: 'marcus@coachlink.com', whatsapp: '+1 (555) 123-4567', instagram: '@marcusjohnson' },
-        avatar: null,
-      },
-      {
-        id: 2,
-        name: 'Sarah Williams',
-        sport: 'Basketball',
-        message: "I'm interested in your training programs.",
-        sentDate: '2025-02-23',
-        responseDate: null,
-        status: 'pending',
-        contact: null,
-        avatar: null,
-      },
-      {
-        id: 3,
-        name: 'David Lee',
-        sport: 'Tennis',
-        message: 'Looking for advanced training.',
-        sentDate: '2025-02-18',
-        responseDate: '2025-02-19',
-        status: 'rejected',
-        contact: null,
-        avatar: null,
-      },
-    ],
+    items: [],
+    loading: false,
   },
   reducers: {
+    setRequests: (state, action) => {
+      state.items = action.payload;
+    },
+    setRequestsLoading: (state, action) => {
+      state.loading = action.payload;
+    },
     acceptRequest: (state, action) => {
-      const req = state.items.find(r => r.id === action.payload);
+      const req = state.items.find(r => r._id === action.payload || r.id === action.payload);
       if (req) { req.status = 'accepted'; req.responseDate = new Date().toISOString().split('T')[0]; }
     },
     declineRequest: (state, action) => {
-      const req = state.items.find(r => r.id === action.payload);
+      const req = state.items.find(r => r._id === action.payload || r.id === action.payload);
       if (req) { req.status = 'rejected'; req.responseDate = new Date().toISOString().split('T')[0]; }
     },
   },
@@ -109,53 +102,26 @@ const requestsSlice = createSlice({
 const athleteRequestsSlice = createSlice({
   name: 'athleteRequests',
   initialState: {
-    items: [
-      {
-        id: 1,
-        coachName: 'Tashi Duncan',
-        sport: 'Tennis',
-        plan: 'Elite Program',
-        message: "Hi! I'd love to improve my serve and baseline game.",
-        sentDate: '2025-03-10',
-        responseDate: '2025-03-11',
-        status: 'accepted',
-        coachContact: { phone: '+1 (555) 987-0001', email: 'tashi@coachlink.com' },
-      },
-      {
-        id: 2,
-        coachName: 'Marcus Johnson',
-        sport: 'Football',
-        plan: 'Starter Program',
-        message: 'Looking to build my defensive positioning and speed.',
-        sentDate: '2025-03-18',
-        responseDate: null,
-        status: 'pending',
-        coachContact: null,
-      },
-      {
-        id: 3,
-        coachName: 'Elena Williams',
-        sport: 'Basketball',
-        plan: 'Champion Program',
-        message: 'Interested in your full conditioning program.',
-        sentDate: '2025-03-05',
-        responseDate: '2025-03-06',
-        status: 'rejected',
-        coachContact: null,
-      },
-    ],
+    items: [],
+    loading: false,
   },
   reducers: {
+    setAthleteRequests: (state, action) => {
+      state.items = action.payload;
+    },
+    setAthleteRequestsLoading: (state, action) => {
+      state.loading = action.payload;
+    },
     cancelAthleteRequest: (state, action) => {
-      state.items = state.items.filter(r => r.id !== action.payload);
+      state.items = state.items.filter(r => (r._id || r.id) !== action.payload);
     },
   },
 });
 
-export const { login, logout } = authSlice.actions;
+export const { login, logout, updateUser } = authSlice.actions;
 export const { setNotificationCount, setSidebarOpen, setActiveFilter } = uiSlice.actions;
-export const { acceptRequest, declineRequest } = requestsSlice.actions;
-export const { cancelAthleteRequest } = athleteRequestsSlice.actions;
+export const { setRequests, setRequestsLoading, acceptRequest, declineRequest } = requestsSlice.actions;
+export const { setAthleteRequests, setAthleteRequestsLoading, cancelAthleteRequest } = athleteRequestsSlice.actions;
 
 export const store = configureStore({
   reducer: {

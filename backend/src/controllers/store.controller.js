@@ -6,13 +6,13 @@ import Store from "../Models/Store.Model.js";
 export const createStore = async (req, res) => {
   try {
     const { name, description } = req.body;
-    const coachId = req.user.id;
+    const trainerId = req.user.id;
 
     if (!name) {
       return res.status(400).json({ message: "Store name is required." });
     }
 
-    const existingStore = await Store.findOne({ coach: coachId });
+    const existingStore = await Store.findOne({ trainer: trainerId });
     if (existingStore) {
       return res.status(400).json({ message: "You already have a store created." });
     }
@@ -28,7 +28,7 @@ export const createStore = async (req, res) => {
     }
 
     const newStore = new Store({
-      coach: coachId,
+      trainer: trainerId,
       name,
       description,
       logo: logoPath,     // <-- Saved as file path
@@ -47,12 +47,12 @@ export const createStore = async (req, res) => {
   }
 };
 
-// @desc    Get store details by Coach ID
-// @route   GET /api/stores/:coachId
+// @desc    Get store details by Trainer ID
+// @route   GET /api/stores/:trainerId
 // @access  Public
 export const getStore = async (req, res) => {
   try {
-    const store = await Store.findOne({ coach: req.params.coachId }).populate('coach', 'name email');
+    const store = await Store.findOne({ trainer: req.params.trainerId || req.params.coachId }).populate('trainer', 'name email');
     
     if (!store) {
       return res.status(404).json({ message: "Store not found" });
@@ -70,9 +70,9 @@ export const getStore = async (req, res) => {
 export const updateStore = async (req, res) => {
   try {
     const { name, description } = req.body;
-    const coachId = req.user.id;
+    const trainerId = req.user.id;
 
-    const store = await Store.findOne({ coach: coachId });
+    const store = await Store.findOne({ trainer: trainerId });
     
     if (!store) {
       return res.status(404).json({ message: "Store not found." });
