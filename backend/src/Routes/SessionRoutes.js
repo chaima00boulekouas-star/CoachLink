@@ -1,24 +1,28 @@
 import express from "express";
 import {
-  bookSession,
+  createSession,
   getCoachSessions,
   getTraineeSessions,
   updateSessionStatus,
+  getAcceptedAthletes,
 } from "../controllers/session.controller.js";
 import { protect } from "../middlewares/Auth.Middleware.js";
-import { isCoach, isTrainee } from "../middlewares/Role.Middleware.js";
+
 const router = express.Router();
 
-// Book a session (trainee)
-router.post("/", protect, isTrainee, bookSession);
+// Trainer creates a session
+router.post("/", protect, createSession);
 
-// Get sessions for coach
-router.get("/coach", protect, isCoach, getCoachSessions);
+// Trainer gets their sessions
+router.get("/trainer", protect, getCoachSessions);
 
-// Get sessions for trainee
-router.get("/trainee", protect, isTrainee, getTraineeSessions);
+// Athlete gets their sessions
+router.get("/athlete", protect, getTraineeSessions);
+
+// Get accepted athletes for scheduling dropdown (trainer)
+router.get("/accepted-athletes", protect, getAcceptedAthletes);
 
 // Update session status
-router.put("/:id", protect, isCoach, updateSessionStatus);
+router.put("/:id/status", protect, updateSessionStatus);
 
 export default router;

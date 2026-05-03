@@ -1,56 +1,94 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Bell, Check, CheckCheck, Settings, ShoppingBag, Calendar, UserPlus, Star, Trash2 } from 'lucide-react';
+import { Bell, Check, CheckCheck, ShoppingBag, Calendar, UserPlus, UserCheck, UserX, Star, Trash2 } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 import { useDispatch } from 'react-redux';
 import { setNotificationCount } from '../redux/store';
+import { notificationService } from '../api/dataService';
 
 const notificationTypes = {
-  request: { icon: UserPlus, color: 'bg-primary-blue/10 text-primary-blue' },
-  order: { icon: ShoppingBag, color: 'bg-primary-orange/10 text-primary-orange' },
-  session: { icon: Calendar, color: 'bg-green-100 dark:bg-green-900/20 text-green-600' },
-  review: { icon: Star, color: 'bg-amber-100 dark:bg-amber-900/20 text-amber-500' },
-  system: { icon: Bell, color: 'bg-slate-100 dark:bg-dark-border text-slate-500' },
+  request:          { icon: UserPlus,  color: 'bg-primary-blue/10 text-primary-blue' },
+  request_accepted: { icon: UserCheck, color: 'bg-green-100 dark:bg-green-900/20 text-green-600' },
+  request_declined: { icon: UserX,     color: 'bg-red-100 dark:bg-red-900/20 text-red-500' },
+  session:          { icon: Calendar,  color: 'bg-indigo-100 dark:bg-indigo-900/20 text-indigo-600' },
+  order:            { icon: ShoppingBag, color: 'bg-primary-orange/10 text-primary-orange' },
+  review:           { icon: Star,      color: 'bg-amber-100 dark:bg-amber-900/20 text-amber-500' },
+  system:           { icon: Bell,      color: 'bg-slate-100 dark:bg-dark-border text-slate-500' },
 };
 
-const initialNotifications = [
-  { id: 1, type: 'request', title: 'New Training Request', message: 'Chris Evans sent you a training request for Football coaching.', time: 'Just now', read: false },
-  { id: 2, type: 'request', title: 'New Training Request', message: 'Lena Gomez would like to join your beginner fitness program.', time: '5 min ago', read: false },
-  { id: 3, type: 'order', title: 'New Order Received', message: 'Alex Johnson purchased 12-Week Football Program ($299).', time: '1 hour ago', read: false },
-  { id: 4, type: 'session', title: 'Session Reminder', message: 'You have a session with Sarah Martinez today at 2:00 PM.', time: '2 hours ago', read: true },
-  { id: 5, type: 'review', title: 'New Review', message: 'Mike Brown left you a 5-star review on your Elite Defense Masterclass.', time: '1 day ago', read: true },
-  { id: 6, type: 'order', title: 'New Order Received', message: 'Emma Davis purchased Nutrition & Meal Guide ($79).', time: '1 day ago', read: true },
-  { id: 7, type: 'system', title: 'Subscription Renewal', message: 'Your store subscription will auto-renew on May 8, 2026. Make sure your payment info is up to date.', time: '2 days ago', read: true },
-];
+const timeAgo = (dateStr) => {
+  const now = new Date();
+  const d = new Date(dateStr);
+  const diffMs = now - d;
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 1) return 'Just now';
+  if (diffMin < 60) return `${diffMin} min ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr} hour${diffHr > 1 ? 's' : ''} ago`;
+  const diffDay = Math.floor(diffHr / 24);
+  if (diffDay < 7) return `${diffDay} day${diffDay > 1 ? 's' : ''} ago`;
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+};
 
 const NotificationsPage = () => {
-  const [notifications, setNotifications] = useState(initialNotifications);
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('All');
   const dispatch = useDispatch();
 
-  const filters = ['All', 'Unread', 'Requests', 'Orders', 'Sessions'];
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const res = await notificationService.getAll();
+        setNotifications(res.notifications || []);
+        const unread = (res.notifications || []).filter(n => !n.read).length;
+        dispatch(setNotificationCount(unread));
+      } catch (err) {
+        console.error('Failed to fetch notifications:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchNotifications();
+  }, [dispatch]);
+
+  const filters = ['All', 'Unread', 'Requests', 'Sessions'];
 
   const filtered = notifications.filter(n => {
     if (filter === 'Unread') return !n.read;
-    if (filter === 'Requests') return n.type === 'request';
-    if (filter === 'Orders') return n.type === 'order';
+    if (filter === 'Requests') return n.type === 'request' || n.type === 'request_accepted' || n.type === 'request_declined';
     if (filter === 'Sessions') return n.type === 'session';
     return true;
   });
 
-  const markAllRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-    dispatch(setNotificationCount(0));
+  const markAllRead = async () => {
+    try {
+      await notificationService.markAllRead();
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      dispatch(setNotificationCount(0));
+    } catch (err) {
+      console.error('Failed to mark all read:', err);
+    }
   };
 
-  const markRead = (id) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
-    const unread = notifications.filter(n => !n.read && n.id !== id).length;
-    dispatch(setNotificationCount(unread));
+  const markRead = async (id) => {
+    try {
+      await notificationService.markRead(id);
+      setNotifications(prev => prev.map(n => n._id === id ? { ...n, read: true } : n));
+      const unread = notifications.filter(n => !n.read && n._id !== id).length;
+      dispatch(setNotificationCount(unread));
+    } catch (err) {
+      console.error('Failed to mark read:', err);
+    }
   };
 
-  const deleteNotification = (id) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
+  const deleteNotif = async (id) => {
+    try {
+      await notificationService.delete(id);
+      setNotifications(prev => prev.filter(n => n._id !== id));
+    } catch (err) {
+      console.error('Failed to delete notification:', err);
+    }
   };
 
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -97,17 +135,21 @@ const NotificationsPage = () => {
 
         {/* Notification list */}
         <div className="space-y-3">
-          {filtered.length === 0 ? (
+          {loading ? (
+            <div className="flex items-center justify-center py-16">
+              <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : filtered.length === 0 ? (
             <div className="text-center py-16 text-slate-400 dark:text-slate-500">
               <Bell size={48} className="mx-auto mb-3 opacity-30" />
-              <p className="font-semibold">No notifications here</p>
+              <p className="font-semibold">{filter === 'Unread' ? 'No unread notifications' : 'No notifications yet'}</p>
             </div>
           ) : filtered.map(n => {
-            const config = notificationTypes[n.type];
+            const config = notificationTypes[n.type] || notificationTypes.system;
             const Icon = config.icon;
             return (
               <motion.div
-                key={n.id}
+                key={n._id}
                 layout
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -129,7 +171,7 @@ const NotificationsPage = () => {
                     <p className={`text-sm font-bold ${n.read ? 'text-slate-700 dark:text-slate-300' : 'text-slate-900 dark:text-white'}`}>
                       {n.title}
                     </p>
-                    <span className="text-[10px] text-slate-400 whitespace-nowrap mt-0.5">{n.time}</span>
+                    <span className="text-[10px] text-slate-400 whitespace-nowrap mt-0.5">{timeAgo(n.createdAt)}</span>
                   </div>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">{n.message}</p>
                 </div>
@@ -138,7 +180,7 @@ const NotificationsPage = () => {
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
                   {!n.read && (
                     <button
-                      onClick={() => markRead(n.id)}
+                      onClick={() => markRead(n._id)}
                       title="Mark as read"
                       className="w-7 h-7 rounded-lg bg-green-100 dark:bg-green-900/20 text-green-600 flex items-center justify-center hover:bg-green-200 transition-colors"
                     >
@@ -146,7 +188,7 @@ const NotificationsPage = () => {
                     </button>
                   )}
                   <button
-                    onClick={() => deleteNotification(n.id)}
+                    onClick={() => deleteNotif(n._id)}
                     title="Delete"
                     className="w-7 h-7 rounded-lg bg-red-50 dark:bg-red-900/10 text-red-400 flex items-center justify-center hover:bg-red-100 transition-colors"
                   >

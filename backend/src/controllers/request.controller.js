@@ -1,5 +1,6 @@
 import CoachingRequest from '../Models/CoachingRequest.Model.js';
 import User from '../Models/User.Model.js';
+import { createNotification } from './notification.controller.js';
 
 // @desc    Send a coaching request (athlete → trainer)
 // @route   POST /api/requests
@@ -37,6 +38,16 @@ export const sendRequest = async (req, res) => {
 
     // Populate for the response
     await request.populate('trainer', 'name email avatar');
+
+    // Notify the trainer about the new request
+    await createNotification({
+      recipient: trainerId,
+      type: 'request',
+      title: 'New Training Request',
+      message: `${req.user.name} sent you a training request.`,
+      relatedId: request._id,
+      relatedModel: 'CoachingRequest',
+    });
 
     res.status(201).json({ request });
   } catch (err) {
@@ -101,6 +112,17 @@ export const acceptRequest = async (req, res) => {
     await request.save();
 
     await request.populate('athlete', 'name email avatar phone');
+
+    // Notify the athlete that their request was accepted
+    await createNotification({
+      recipient: request.athlete._id,
+      type: 'request_accepted',
+      title: 'Request Accepted! 🎉',
+      message: `${req.user.name} accepted your training request. You can now schedule sessions!`,
+      relatedId: request._id,
+      relatedModel: 'CoachingRequest',
+    });
+
     res.json({ request });
   } catch (err) {
     console.error('Accept request error:', err);
@@ -131,6 +153,17 @@ export const declineRequest = async (req, res) => {
     await request.save();
 
     await request.populate('athlete', 'name email avatar phone');
+
+    // Notify the athlete that their request was declined
+    await createNotification({
+      recipient: request.athlete._id,
+      type: 'request_declined',
+      title: 'Request Declined',
+      message: `${req.user.name} declined your training request.`,
+      relatedId: request._id,
+      relatedModel: 'CoachingRequest',
+    });
+
     res.json({ request });
   } catch (err) {
     console.error('Decline request error:', err);
