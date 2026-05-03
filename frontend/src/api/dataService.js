@@ -204,6 +204,21 @@ export const productService = {
   },
 };
 
+// ── Store API Service ───────────────────────────────────────────────────
+export const storeService = {
+  // Get current trainer's store
+  getMyStore: async () => {
+    const res = await api.get('/api/stores/me');
+    return res.data;
+  },
+
+  // Cancel current trainer's subscription
+  cancelSubscription: async () => {
+    const res = await api.post('/api/stores/cancel-subscription');
+    return res.data;
+  },
+};
+
 // ── Orders API Service ────────────────────────────────────────────────────
 
 export const orderService = {

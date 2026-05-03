@@ -35,6 +35,19 @@ const storeSchema = new mongoose.Schema(
       index: true,
     },
 
+    // When the subscription period ends (if applicable)
+    subscriptionExpiresAt: {
+      type: Date,
+    },
+
+    // subscriptionStatus: 'inactive' | 'active' | 'cancelled' | 'expired'
+    subscriptionStatus: {
+      type: String,
+      enum: ['inactive', 'active', 'cancelled', 'expired'],
+      default: 'inactive',
+      index: true,
+    },
+
     ratingAvg: {
       type: Number,
       default: 0,

@@ -25,7 +25,19 @@ const TrainerLogin = () => {
     setError('');
     try {
       const data = await authService.trainerLogin(email, password);
-      dispatch(login({ user: data.user, role: data.user.role, token: data.token }));
+      console.log('Trainer login response:', data);
+
+      // Normalize response shape and ensure localStorage is set before navigation
+      const user = data?.user || data?.profile || null;
+      const token = data?.token || data?.accessToken || null;
+
+      if (token) {
+        try {
+          localStorage.setItem('cl_auth', JSON.stringify({ user, role: user?.role || 'trainer', token, isAuthenticated: true }));
+        } catch (e) { /* ignore storage errors */ }
+      }
+
+      dispatch(login({ user, role: user?.role || 'trainer', token }));
       navigate('/dashboard');
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed. Please check your credentials.');

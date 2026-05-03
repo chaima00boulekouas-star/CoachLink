@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Filter, ChevronDown, Edit2, Trash2, Eye, CheckCircle, XCircle } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 import { productService } from '../api/dataService';
+import { storeService } from '../api/dataService';
+import { useSelector } from 'react-redux';
 import { getImageUrl, FALLBACK_PRODUCT_IMAGE } from '../utils/imageUrl';
 
 const FILTERS = ['All', 'Training Programs', 'Video Courses', 'Equipment', 'Nutrition Guides', 'Mental Training'];
@@ -96,12 +98,22 @@ const MyStore = () => {
   const [activeFilter, setActiveFilter] = useState('All');
   const [products, setProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [store, setStore] = useState(null);
+  const authUser = useSelector(s => s.auth.user);
 
   React.useEffect(() => {
     const fetchProducts = async () => {
       try {
         const data = await productService.getMyProducts();
         setProducts(data.products || []);
+        // fetch store details
+        try {
+          const s = await storeService.getMyStore();
+          setStore(s.store || null);
+        } catch (err) {
+          // no store or failed
+          setStore(null);
+        }
       } catch (error) {
         console.error('Failed to fetch products:', error);
       } finally {
@@ -130,14 +142,28 @@ const MyStore = () => {
       {/* Status Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 bg-white dark:bg-dark-card rounded-xl px-4 py-3 border border-slate-100 dark:border-dark-border shadow-sm">
         <div className="flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-green-600 dark:text-green-400">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-            Store Active
-          </div>
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-green-600 dark:text-green-400">
-            <CheckCircle size={13} />
-            <span className="hidden sm:inline">Subscription Active · </span>Next billing: May 8, 2026
-          </div>
+            {store ? (
+              <>
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-green-600 dark:text-green-400">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                  Store Active
+                </div>
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-green-600 dark:text-green-400">
+                  <CheckCircle size={13} />
+                  <span className="hidden sm:inline">Subscription</span>
+                  {store.subscriptionExpiresAt ? (
+                    <span> · Next billing: {new Date(store.subscriptionExpiresAt).toLocaleDateString()}</span>
+                  ) : (
+                    <span> · Active</span>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                <XCircle size={13} />
+                No store / Subscription inactive
+              </div>
+            )}
         </div>
         <div className="flex items-center gap-3">
           <Link to="/store/new-product">
@@ -145,7 +171,28 @@ const MyStore = () => {
               <Plus size={14} /> Add Product
             </button>
           </Link>
-          <button className="text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap">
+          <button
+            onClick={async () => {
+              if (!store) return alert('No store to cancel subscription for.');
+              // If subscription expires in future, disallow
+              if (store.subscriptionExpiresAt && new Date() < new Date(store.subscriptionExpiresAt)) {
+                return alert('Subscription is active until ' + new Date(store.subscriptionExpiresAt).toLocaleString() + '. You cannot cancel until it ends.');
+              }
+              if (!confirm('Are you sure you want to cancel your store subscription? This will deactivate your store.')) return;
+              try {
+                const res = await storeService.cancelSubscription();
+                alert(res.message || 'Subscription cancelled');
+                // Refresh products and store
+                setProducts([]);
+                setStore(res.store || null);
+              } catch (err) {
+                console.error(err);
+                alert(err.response?.data?.message || 'Failed to cancel subscription');
+              }
+            }}
+            className={`text-xs font-bold ${store ? 'text-red-500' : 'text-slate-400'} hover:bg-red-50 dark:hover:bg-red-900/10 px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap`}
+            disabled={!store}
+          >
             Cancel Subscription
           </button>
         </div>
