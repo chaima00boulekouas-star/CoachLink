@@ -43,7 +43,7 @@ const CoachProfile = () => {
           sport: p.sports?.[0] || p.specialization || 'Fitness',
           sports: p.sports || [],
           bio: p.philosophy || 'Professional trainer dedicated to your success.',
-          image: p.user?.avatar ? `http://localhost:5000${p.user.avatar}` : 'https://images.unsplash.com/photo-1574680096145-d05b474e2155?auto=format&fit=crop&q=80&w=600',
+          image: getImageUrl(p.user?.avatar, 'https://images.unsplash.com/photo-1574680096145-d05b474e2155?auto=format&fit=crop&q=80&w=600'),
           rating: p.ratingAvg || 5.0,
           reviews: p.ratingCount || 0,
           athletes: 0, // Placeholder or fetch if available
