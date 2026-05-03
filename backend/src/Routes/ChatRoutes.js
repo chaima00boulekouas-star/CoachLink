@@ -4,6 +4,7 @@ import {
   getConversations,
   sendMessage,
   getMessages,
+  cleanupDuplicates,
 } from "../controllers/chat.controller.js";
 import { protect } from "../middlewares/Auth.Middleware.js";
 
@@ -17,6 +18,9 @@ router.get("/conversations", getConversations);
 
 // Get or create a conversation with a specific user
 router.post("/conversation", getOrCreateConversation);
+
+// Cleanup duplicate conversations
+router.delete("/cleanup-duplicates", cleanupDuplicates);
 
 // Send a message to a conversation
 router.post("/conversation/:conversationId/message", sendMessage);

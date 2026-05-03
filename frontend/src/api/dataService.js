@@ -409,4 +409,10 @@ export const chatService = {
     const res = await api.post(`/api/chat/conversation/${conversationId}/message`, { text });
     return res.data;
   },
+
+  // Cleanup duplicate conversations
+  cleanupDuplicates: async () => {
+    const res = await api.delete('/api/chat/cleanup-duplicates');
+    return res.data;
+  },
 };
