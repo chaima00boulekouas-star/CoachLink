@@ -39,6 +39,7 @@ const CoachesPage = () => {
       const data = await trainerService.getAll({
         sport: sportFilter,
         wilaya,
+        experience: expFilter,
         maxPrice,
         search,
       });
@@ -49,7 +50,7 @@ const CoachesPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [sportFilter, wilaya, maxPrice, search]);
+  }, [sportFilter, wilaya, expFilter, maxPrice, search]);
 
   useEffect(() => {
     fetchTrainers();

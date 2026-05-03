@@ -6,6 +6,7 @@ import {
   getCoachProfile,
   toggleFavorite,
   getFavorites,
+  getAllTrainers,
 } from "../controllers/trainerProfile.controller.js";
 
 import { protect  } from "../middlewares/Auth.Middleware.js";
@@ -17,6 +18,7 @@ router.get("/favorites", protect, isTrainer, getFavorites);
 router.post("/favorites/:athleteId", protect, isTrainer, toggleFavorite);
 
 // public
+router.get("/", getAllTrainers);
 router.get("/:id", getCoachProfile);
 
 // protected (trainer only)

@@ -1,7 +1,68 @@
 import TrainerProfile from "../Models/TrainerProfile.Model.js";
+import User from "../Models/User.Model.js";
 
+// @desc    Get all trainers with filters
+// @route   GET /api/trainer-profiles
+// @access  Public
+export const getAllTrainers = async (req, res) => {
+  try {
+    const { sport, wilaya, experience, search, maxPrice } = req.query;
+    
+    let query = {};
+    
+    // Filter by sport
+    if (sport && sport !== 'All') {
+      query.sports = { $in: [sport] };
+    }
+    
+    // Filter by location (wilaya)
+    if (wilaya && wilaya !== 'All') {
+      query.location = { $regex: wilaya, $options: 'i' };
+    }
+    
+    // Filter by experience
+    if (experience && experience !== 'All') {
+      query.experience = experience;
+    }
 
-//add get All coaches and delete coach profile
+    // Filter by maxPrice
+    if (maxPrice) {
+      query.price = { $lte: Number(maxPrice) };
+    }
+
+    let trainerProfiles = await TrainerProfile.find(query).populate('user', 'name email avatar');
+
+    // Search by name, specialization, or sport
+    if (search) {
+      const searchLower = search.toLowerCase();
+      trainerProfiles = trainerProfiles.filter(profile => 
+        (profile.user?.name && profile.user.name.toLowerCase().includes(searchLower)) ||
+        (profile.specialization && profile.specialization.toLowerCase().includes(searchLower)) ||
+        (profile.sports && profile.sports.some(s => s.toLowerCase().includes(searchLower)))
+      );
+    }
+
+    // Map to the structure the frontend expects
+    const formattedTrainers = trainerProfiles.map(profile => ({
+      _id: profile.user?._id,
+      id: profile.user?._id,
+      name: profile.user?.name || 'Anonymous Coach',
+      image: profile.user?.avatar ? `http://localhost:5000${profile.user.avatar}` : 'https://images.unsplash.com/photo-1594381898411-846e7d193883?auto=format&fit=crop&q=80&w=200',
+      rating: profile.ratingAvg || 5.0,
+      sport: profile.sports?.[0] || profile.specialization || 'Fitness',
+      sports: profile.sports || [],
+      location: profile.location || 'Online',
+      price: profile.price,
+      experience: profile.experience,
+      specialization: profile.specialization
+    }));
+
+    res.status(200).json({ trainers: formattedTrainers });
+  } catch (error) {
+    console.error('Get all trainers error:', error);
+    res.status(500).json({ message: "Failed to fetch trainers", error: error.message });
+  }
+};
 
 
 // @desc    Create or update the coach profile
