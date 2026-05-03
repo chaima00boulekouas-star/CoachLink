@@ -1,18 +1,33 @@
 import nodemailer from 'nodemailer';
 
-const getTransporter = () => {
-  // Using explicit host/port is often more reliable across different networks than 'service: gmail'
+const getTransporter = async () => {
+  // If explicit SMTP credentials are provided, use them.
+  if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+    return nodemailer.createTransport({
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true, // Use SSL
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+      // Adding debug info to help your team see why it fails
+      debug: true,
+      logger: true 
+    });
+  }
+
+  // Development fallback: use Ethereal test account so emails can be previewed
+  // without needing a real SMTP provider. Useful for local development.
+  const testAccount = await nodemailer.createTestAccount();
   return nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true, // Use SSL
+    host: 'smtp.ethereal.email',
+    port: 587,
+    secure: false,
     auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
+      user: testAccount.user,
+      pass: testAccount.pass,
     },
-    // Adding debug info to help your team see why it fails
-    debug: true,
-    logger: true 
   });
 };
 
@@ -20,7 +35,7 @@ export const sendVerificationEmail = async (email, token, name) => {
   const verificationUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/verify-email?token=${token}`;
 
   const mailOptions = {
-    from: `"CoachLink" <${process.env.EMAIL_USER}>`,
+    from: `"CoachLink" <${process.env.EMAIL_USER || 'no-reply@coachlink.com'}>`,
     to: email,
     subject: 'Verify your CoachLink account',
     html: `
@@ -40,9 +55,11 @@ export const sendVerificationEmail = async (email, token, name) => {
   };
 
   try {
-    const transporter = getTransporter();
-    await transporter.sendMail(mailOptions);
+    const transporter = await getTransporter();
+    const info = await transporter.sendMail(mailOptions);
     console.log(`Verification email sent to ${email}`);
+    const preview = nodemailer.getTestMessageUrl(info);
+    if (preview) console.log(`Preview URL: ${preview}`);
   } catch (err) {
     console.error('Error sending verification email:', err);
     throw new Error('Could not send verification email');
@@ -51,7 +68,7 @@ export const sendVerificationEmail = async (email, token, name) => {
 
 export const sendOTPEmail = async (email, otp) => {
   const mailOptions = {
-    from: `"CoachLink" <${process.env.EMAIL_USER}>`,
+    from: `"CoachLink" <${process.env.EMAIL_USER || 'no-reply@coachlink.com'}>`,
     to: email,
     subject: 'CoachLink - Email Verification Code',
     html: `
@@ -69,9 +86,11 @@ export const sendOTPEmail = async (email, otp) => {
   };
 
   try {
-    const transporter = getTransporter();
-    await transporter.sendMail(mailOptions);
+    const transporter = await getTransporter();
+    const info = await transporter.sendMail(mailOptions);
     console.log(`OTP email sent to ${email}`);
+    const preview = nodemailer.getTestMessageUrl(info);
+    if (preview) console.log(`Preview URL: ${preview}`);
   } catch (err) {
     console.error('Error sending OTP email:', err);
     throw new Error('Could not send OTP email');

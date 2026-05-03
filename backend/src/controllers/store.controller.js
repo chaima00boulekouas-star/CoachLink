@@ -64,6 +64,55 @@ export const getStore = async (req, res) => {
   }
 };
 
+// @desc    Get current trainer's store (protected)
+// @route   GET /api/stores/me
+// @access  Private (Coach only)
+export const getMyStore = async (req, res) => {
+  try {
+    const trainerId = req.user.id;
+    const store = await Store.findOne({ trainer: trainerId }).populate('trainer', 'name email');
+    if (!store) return res.status(404).json({ message: 'Store not found' });
+    res.status(200).json({ store });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch store', error: error.message });
+  }
+};
+
+// @desc    Cancel subscription for current trainer's store
+// @route   POST /api/stores/cancel-subscription
+// @access  Private (Coach only)
+export const cancelSubscription = async (req, res) => {
+  try {
+    const trainerId = req.user.id;
+    const store = await Store.findOne({ trainer: trainerId });
+    if (!store) return res.status(404).json({ message: 'Store not found' });
+
+    // No active subscription
+    if (!store.subscriptionPaid && store.subscriptionStatus !== 'active') {
+      return res.status(400).json({ message: 'There is no active subscription to cancel.' });
+    }
+
+    const now = new Date();
+    if (store.subscriptionExpiresAt && now < store.subscriptionExpiresAt) {
+      return res.status(400).json({ message: `Subscription is active until ${store.subscriptionExpiresAt.toISOString()}. You cannot cancel until it ends.` });
+    }
+
+    // Allow cancellation when subscription ended (or no expiry set)
+    store.subscriptionPaid = false;
+    store.subscriptionStatus = 'cancelled';
+    store.subscriptionExpiresAt = undefined;
+    store.isActive = false;
+
+    await store.save();
+
+    // Optionally: deactivate all products in this store (soft)
+    // For now, return updated store and let frontend refresh products view
+    res.status(200).json({ message: 'Subscription cancelled successfully', store });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to cancel subscription', error: error.message });
+  }
+};
+
 // @desc    Update store details
 // @route   PUT /api/stores
 // @access  Private (Coach only)

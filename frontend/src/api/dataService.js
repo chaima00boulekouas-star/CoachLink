@@ -186,7 +186,8 @@ export const productService = {
 
   // Update a product
   update: async (id, data) => {
-    const res = await api.put(`/api/products/${id}`, data);
+    const config = data instanceof FormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : {};
+    const res = await api.put(`/api/products/${id}`, data, config);
     return res.data;
   },
 
@@ -199,6 +200,21 @@ export const productService = {
   // Get my store products (trainer)
   getMyProducts: async () => {
     const res = await api.get('/api/products/my-store');
+    return res.data;
+  },
+};
+
+// ── Store API Service ───────────────────────────────────────────────────
+export const storeService = {
+  // Get current trainer's store
+  getMyStore: async () => {
+    const res = await api.get('/api/stores/me');
+    return res.data;
+  },
+
+  // Cancel current trainer's subscription
+  cancelSubscription: async () => {
+    const res = await api.post('/api/stores/cancel-subscription');
     return res.data;
   },
 };

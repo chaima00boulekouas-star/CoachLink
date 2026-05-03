@@ -1,5 +1,16 @@
 import api from './axios';
 
+const getAuthHeaders = () => {
+  const authData = localStorage.getItem('cl_auth');
+  if (!authData) return {};
+  try {
+    const { token } = JSON.parse(authData);
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  } catch (e) {
+    return {};
+  }
+};
+
 // ── Auth API Service ──────────────────────────────────────────────────────
 // Backend routes live at /api/users/...
 
@@ -60,13 +71,13 @@ export const authService = {
 
   // Get current user  →  GET /api/users/me
   getMe: async () => {
-    const res = await api.get('/api/users/me');
+    const res = await api.get('/api/users/me', { headers: getAuthHeaders() });
     return res.data;
   },
 
   // Update profile  →  PUT /api/users/:id
   updateProfile: async (id, data) => {
-    const res = await api.put(`/api/users/${id}`, data);
+    const res = await api.put(`/api/users/${id}`, data, { headers: getAuthHeaders() });
     return res.data;
   },
 
