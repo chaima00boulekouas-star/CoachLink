@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { User, Bell, Shield, CreditCard, Globe, Moon, Sun, ChevronRight, Save, Eye, EyeOff } from 'lucide-react';
+import { User, Bell, Shield, CreditCard, Globe, Moon, Sun, ChevronRight, Save, Eye, EyeOff, Camera } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 import { useTheme } from '../context/ThemeContext';
 import Input from '../components/Input';
 import Button from '../components/Button';
+import { useSelector, useDispatch } from 'react-redux';
+import { updateUser } from '../redux/store';
+import authService from '../api/authService';
 
 const sections = [
   { id: 'profile', label: 'Profile', icon: User },
@@ -16,20 +19,38 @@ const sections = [
 
 const SettingsPage = () => {
   const { theme, toggleTheme } = useTheme();
+  const dispatch = useDispatch();
+  const user = useSelector((state) => state.auth.user);
   const [activeSection, setActiveSection] = useState('profile');
   const [saved, setSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   // Profile form state
   const [profile, setProfile] = useState({
-    firstName: 'Ted',
-    lastName: 'Lasso',
-    email: 'ted@coachlink.com',
-    phone: '+1 (555) 123-4567',
-    bio: 'Professional Football Coach with 11+ years of experience.',
-    sport: 'Football',
-    location: 'San Francisco, CA',
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    bio: '',
+    sport: '',
+    location: '',
   });
+
+  useEffect(() => {
+    if (user) {
+      const nameParts = (user.name || '').split(' ');
+      setProfile({
+        firstName: nameParts[0] || '',
+        lastName: nameParts.slice(1).join(' ') || '',
+        email: user.email || '',
+        phone: user.phone || '',
+        bio: user.role === 'trainer' ? user.philosophy : user.reason || '',
+        sport: Array.isArray(user.sports) && user.sports.length > 0 ? user.sports[0] : (user.sports || ''),
+        location: user.location || user.profileLocation || '',
+      });
+    }
+  }, [user]);
 
   // Notification toggles
   const [notifSettings, setNotifSettings] = useState({
@@ -41,9 +62,37 @@ const SettingsPage = () => {
     pushSessions: true,
   });
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  const handleSave = async () => {
+    if (!user) return;
+    setIsSaving(true);
+    try {
+      const fullName = `${profile.firstName} ${profile.lastName}`.trim();
+      
+      const payload = {
+        name: fullName,
+        email: profile.email,
+        phone: profile.phone,
+        location: profile.location,
+        sports: [profile.sport],
+      };
+      
+      if (user.role === 'trainer') {
+        payload.philosophy = profile.bio;
+      } else {
+        payload.reason = profile.bio;
+      }
+      
+      const res = await authService.updateProfile(user.id, payload);
+      dispatch(updateUser(res.user));
+      
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (err) {
+      console.error('Failed to update profile', err);
+      alert('Failed to update profile');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -89,13 +138,51 @@ const SettingsPage = () => {
                   <h2 className="text-lg font-black text-slate-900 dark:text-white mb-6">Profile Information</h2>
                   {/* Avatar */}
                   <div className="flex items-center gap-4 mb-6 p-4 bg-slate-50 dark:bg-white/5 rounded-xl">
-                    <div className="w-16 h-16 rounded-2xl bg-primary-blue overflow-hidden">
-                      <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200" alt="profile" className="w-full h-full object-cover" />
+                    <div className="w-16 h-16 rounded-2xl bg-primary-blue overflow-hidden relative group">
+                      <img 
+                        src={user?.avatar ? `http://localhost:5000${user.avatar}` : "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200"} 
+                        alt="profile" 
+                        className="w-full h-full object-cover" 
+                      />
+                      {isSaving && (
+                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        </div>
+                      )}
                     </div>
                     <div>
                       <p className="font-bold text-slate-900 dark:text-white text-sm">Profile Photo</p>
                       <p className="text-xs text-slate-400 mb-2">JPG, PNG up to 5MB</p>
-                      <button className="text-xs font-bold text-primary-blue border border-primary-blue px-3 py-1 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/10 transition-colors">
+                      <input
+                        type="file"
+                        id="avatar-upload"
+                        className="hidden"
+                        accept="image/*"
+                        onChange={async (e) => {
+                          const file = e.target.files[0];
+                          if (!file) return;
+                          
+                          const formData = new FormData();
+                          formData.append('avatar', file);
+                          
+                          setIsSaving(true);
+                          try {
+                            const res = await authService.updateAvatar(formData);
+                            dispatch(updateUser(res.user));
+                            setSaved(true);
+                            setTimeout(() => setSaved(false), 2000);
+                          } catch (err) {
+                            console.error('Avatar upload failed', err);
+                            alert('Failed to upload photo');
+                          } finally {
+                            setIsSaving(false);
+                          }
+                        }}
+                      />
+                      <button 
+                        onClick={() => document.getElementById('avatar-upload').click()}
+                        className="text-xs font-bold text-primary-blue border border-primary-blue px-3 py-1 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/10 transition-colors"
+                      >
                         Change Photo
                       </button>
                     </div>
@@ -117,8 +204,8 @@ const SettingsPage = () => {
                       className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-dark-border bg-white dark:bg-dark-bg text-slate-900 dark:text-white text-sm focus:outline-none focus:border-primary-blue focus:ring-4 focus:ring-primary-blue/10 transition-all resize-none"
                     />
                   </div>
-                  <Button variant="blue" className="!w-auto px-8" onClick={handleSave}>
-                    {saved ? '✓ Saved!' : <><Save size={16} className="mr-2" /> Save Changes</>}
+                  <Button variant="blue" className="!w-auto px-8" onClick={handleSave} disabled={isSaving}>
+                    {isSaving ? 'Saving...' : saved ? '✓ Saved!' : <><Save size={16} className="mr-2" /> Save Changes</>}
                   </Button>
                 </div>
               )}

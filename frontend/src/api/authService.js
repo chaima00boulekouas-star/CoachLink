@@ -70,6 +70,14 @@ export const authService = {
     return res.data;
   },
 
+  // Update avatar  →  PUT /api/users/avatar
+  updateAvatar: async (formData) => {
+    const res = await api.put('/api/users/avatar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return res.data;
+  },
+
   // Logout (client-side only — no server session)
   logout: () => {
     localStorage.removeItem('cl_auth');
