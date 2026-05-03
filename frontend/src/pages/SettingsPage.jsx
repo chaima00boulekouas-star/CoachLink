@@ -26,6 +26,49 @@ const SettingsPage = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  // Password form state
+  const [passwords, setPasswords] = useState({
+    current: '',
+    new: '',
+    confirm: '',
+  });
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
+
+  const handleUpdatePassword = async () => {
+    setPasswordError('');
+    setPasswordSuccess('');
+
+    if (!passwords.current || !passwords.new || !passwords.confirm) {
+      setPasswordError('All fields are required');
+      return;
+    }
+
+    if (passwords.new !== passwords.confirm) {
+      setPasswordError('New passwords do not match');
+      return;
+    }
+
+    if (passwords.new.length < 8) {
+      setPasswordError('Password must be at least 8 characters');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await authService.changePassword(passwords.current, passwords.new);
+      setPasswordSuccess('Password updated successfully!');
+      setPasswords({ current: '', new: '', confirm: '' });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (err) {
+      console.error('Password update failed', err);
+      setPasswordError(err.response?.data?.message || 'Failed to update password');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   // Profile form state
   const [profile, setProfile] = useState({
     firstName: '',
@@ -110,7 +153,11 @@ const SettingsPage = () => {
               {sections.map(({ id, label, icon: Icon }) => (
                 <button
                   key={id}
-                  onClick={() => setActiveSection(id)}
+                  onClick={() => {
+                    setActiveSection(id);
+                    setPasswordError('');
+                    setPasswordSuccess('');
+                  }}
                   className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                     activeSection === id
                       ? 'bg-primary-blue text-white shadow-lg shadow-blue-500/20'
@@ -255,19 +302,51 @@ const SettingsPage = () => {
                   <h2 className="text-lg font-black text-slate-900 dark:text-white mb-6">Security Settings</h2>
                   <div className="space-y-4 mb-6">
                     <div className="relative">
-                      <Input label="Current Password" type={showPassword ? 'text' : 'password'} placeholder="••••••••" />
+                      <Input 
+                        label="Current Password" 
+                        type={showPassword ? 'text' : 'password'} 
+                        placeholder="••••••••" 
+                        value={passwords.current}
+                        onChange={e => setPasswords({...passwords, current: e.target.value})}
+                      />
                       <button onClick={() => setShowPassword(p => !p)} className="absolute right-3 top-9 text-slate-400">
                         {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
                     </div>
-                    <Input label="New Password" type="password" placeholder="••••••••" />
-                    <Input label="Confirm New Password" type="password" placeholder="••••••••" />
+                    <Input 
+                      label="New Password" 
+                      type="password" 
+                      placeholder="••••••••" 
+                      value={passwords.new}
+                      onChange={e => setPasswords({...passwords, new: e.target.value})}
+                    />
+                    <Input 
+                      label="Confirm New Password" 
+                      type="password" 
+                      placeholder="••••••••" 
+                      value={passwords.confirm}
+                      onChange={e => setPasswords({...passwords, confirm: e.target.value})}
+                    />
                   </div>
+
+                  {passwordError && (
+                    <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 rounded-xl mb-4">
+                      <p className="text-xs font-bold text-red-600 dark:text-red-400">{passwordError}</p>
+                    </div>
+                  )}
+
+                  {passwordSuccess && (
+                    <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800 rounded-xl mb-4">
+                      <p className="text-xs font-bold text-green-600 dark:text-green-400">{passwordSuccess}</p>
+                    </div>
+                  )}
+
                   <div className="p-4 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-xl mb-6">
                     <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">Password must be at least 8 characters and include a number and special character.</p>
                   </div>
-                  <Button variant="blue" className="!w-auto px-8" onClick={handleSave}>
-                    {saved ? '✓ Saved!' : 'Update Password'}
+                  
+                  <Button variant="blue" className="!w-auto px-8" onClick={handleUpdatePassword} disabled={isSaving}>
+                    {isSaving ? 'Updating...' : 'Update Password'}
                   </Button>
                 </div>
               )}

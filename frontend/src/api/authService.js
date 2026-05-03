@@ -89,6 +89,12 @@ export const authService = {
     return res.data;
   },
 
+  // Change password  →  PUT /api/users/change-password
+  changePassword: async (currentPassword, newPassword) => {
+    const res = await api.put('/api/users/change-password', { currentPassword, newPassword });
+    return res.data;
+  },
+
   // Logout (client-side only — no server session)
   logout: () => {
     localStorage.removeItem('cl_auth');
