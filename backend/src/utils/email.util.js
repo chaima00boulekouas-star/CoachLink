@@ -1,12 +1,18 @@
 import nodemailer from 'nodemailer';
 
 const getTransporter = () => {
+  // Using explicit host/port is often more reliable across different networks than 'service: gmail'
   return nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true, // Use SSL
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
     },
+    // Adding debug info to help your team see why it fails
+    debug: true,
+    logger: true 
   });
 };
 
