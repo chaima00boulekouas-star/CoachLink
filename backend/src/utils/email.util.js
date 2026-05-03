@@ -1,11 +1,27 @@
 import nodemailer from 'nodemailer';
 
-const getTransporter = () => {
+const getTransporter = async () => {
+  // If explicit SMTP credentials are provided, use them.
+  if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+    return nodemailer.createTransport({
+      service: process.env.EMAIL_SERVICE || 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+  }
+
+  // Development fallback: use Ethereal test account so emails can be previewed
+  // without needing a real SMTP provider. Useful for local development.
+  const testAccount = await nodemailer.createTestAccount();
   return nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.ethereal.email',
+    port: 587,
+    secure: false,
     auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
+      user: testAccount.user,
+      pass: testAccount.pass,
     },
   });
 };
@@ -34,9 +50,11 @@ export const sendVerificationEmail = async (email, token, name) => {
   };
 
   try {
-    const transporter = getTransporter();
-    await transporter.sendMail(mailOptions);
+    const transporter = await getTransporter();
+    const info = await transporter.sendMail(mailOptions);
     console.log(`Verification email sent to ${email}`);
+    const preview = nodemailer.getTestMessageUrl(info);
+    if (preview) console.log(`Preview URL: ${preview}`);
   } catch (err) {
     console.error('Error sending verification email:', err);
     throw new Error('Could not send verification email');
@@ -63,9 +81,11 @@ export const sendOTPEmail = async (email, otp) => {
   };
 
   try {
-    const transporter = getTransporter();
-    await transporter.sendMail(mailOptions);
+    const transporter = await getTransporter();
+    const info = await transporter.sendMail(mailOptions);
     console.log(`OTP email sent to ${email}`);
+    const preview = nodemailer.getTestMessageUrl(info);
+    if (preview) console.log(`Preview URL: ${preview}`);
   } catch (err) {
     console.error('Error sending OTP email:', err);
     throw new Error('Could not send OTP email');

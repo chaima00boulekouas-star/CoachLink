@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, Check } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import authService from '../api/authService';
+import { useDispatch } from 'react-redux';
+import { login } from '../redux/store';
 
 // ── Constants ─────────────────────────────────────────────────────────────
 const TOTAL_STEPS = 5;
@@ -495,8 +497,10 @@ const AthleteSignUp = () => {
         reason: data.reason || '',
         isVerified: data.isVerified,
       };
-      await authService.athleteSignup(payload);
-      navigate('/login/athlete', { state: { success: 'Account created successfully! Please log in.' } });
+      const data = await authService.athleteSignup(payload);
+      // Auto-login: store user/token in redux and localStorage
+      dispatch(login({ user: data.user, role: data.user.role, token: data.token }));
+      navigate('/athlete/home');
     } catch (err) {
       setError(err.response?.data?.message || 'Signup failed. Please try again.');
     } finally {

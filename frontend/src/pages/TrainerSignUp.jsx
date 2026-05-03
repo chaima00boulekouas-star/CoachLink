@@ -2,6 +2,8 @@ import React, { useState, useRef } from 'react';
 import { Upload, Check, ChevronDown } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import authService from '../api/authService';
+import { useDispatch } from 'react-redux';
+import { login } from '../redux/store';
 
 // ── Constants ─────────────────────────────────────────────────────────────
 const SPORTS_LIST = [
@@ -149,6 +151,7 @@ const INITIAL = {
 };
 
 const TrainerSignUp = () => {
+  const dispatch = useDispatch();
   const [form, setForm]     = useState(INITIAL);
   const [loading, setLoad]  = useState(false);
   const [error, setError]   = useState('');
@@ -187,8 +190,10 @@ const TrainerSignUp = () => {
         price: form.price,
         isVerified: isVerified,
       };
-      await authService.trainerSignup(payload);
-      navigate('/login/trainer', { state: { success: 'Account created successfully! Please log in.' } });
+      const data = await authService.trainerSignup(payload);
+      // Auto-login: store user/token in redux and localStorage
+      dispatch(login({ user: data.user, role: data.user.role, token: data.token }));
+      navigate('/dashboard');
     } catch (err) {
       setError(err.response?.data?.message || 'Signup failed. Please try again.');
     } finally {

@@ -186,7 +186,8 @@ export const productService = {
 
   // Update a product
   update: async (id, data) => {
-    const res = await api.put(`/api/products/${id}`, data);
+    const config = data instanceof FormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : {};
+    const res = await api.put(`/api/products/${id}`, data, config);
     return res.data;
   },
 
