@@ -12,10 +12,13 @@ import {
   sendOtp,
   verifyOtp,
   getAthletes,
+  updateAvatar,
 } from '../controllers/user.controller.js';
 
 import { protect } from '../middlewares/Auth.Middleware.js';
 import { isAdmin } from '../middlewares/Role.Middleware.js';
+import { upload } from '../middlewares/upload.middleware.js';
+
 
 const router = express.Router();
 
@@ -29,6 +32,7 @@ router.post('/verify-otp', verifyOtp);         // verify OTP code
 
 // ── Protected ─────────────────────────────────────────────────────────────
 router.get('/me', protect, getMe);             // get current user
+router.put('/avatar', protect, upload.single('avatar'), updateAvatar); // update avatar
 router.get('/athletes', protect, getAthletes); // get all athletes (for trainers)
 
 // ── Admin only ────────────────────────────────────────────────────────────

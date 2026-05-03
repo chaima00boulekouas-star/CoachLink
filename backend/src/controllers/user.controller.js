@@ -18,6 +18,7 @@ const safeUser = (user, extra = {}) => ({
   name: user.name,
   email: user.email,
   role: user.role,
+  phone: user.phone || null,
   avatar: user.avatar || null,
   ...extra,
 });
@@ -344,11 +345,12 @@ export const getUserById = async (req, res) => {
 export const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, email, password, avatar, ...profileUpdates } = req.body;
+    const { name, email, password, avatar, phone, ...profileUpdates } = req.body;
 
     const userUpdates = {};
     if (name !== undefined) userUpdates.name = name;
     if (email !== undefined) userUpdates.email = email.toLowerCase();
+    if (phone !== undefined) userUpdates.phone = phone;
     if (avatar !== undefined) userUpdates.avatar = avatar;
     if (password) {
       userUpdates.password = await bcrypt.hash(password, 10);
@@ -408,3 +410,30 @@ export const deleteUser = async (req, res) => {
     res.status(500).json({ message: err.message || 'Server error' });
   }
 };
+
+export const updateAvatar = async (req, res) => {
+
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    const userId = req.user.id;
+    const avatarPath = `/uploads/${req.file.filename}`;
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { avatar: avatarPath },
+      { new: true }
+    ).select('-password');
+
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const profileData = await getProfileData(user);
+    res.json({ user: safeUser(user, profileData) });
+  } catch (err) {
+    console.error('Update avatar error:', err);
+    res.status(500).json({ message: err.message || 'Server error' });
+  }
+};
+
