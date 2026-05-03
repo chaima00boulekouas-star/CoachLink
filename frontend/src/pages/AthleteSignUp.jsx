@@ -496,7 +496,7 @@ const AthleteSignUp = () => {
         isVerified: data.isVerified,
       };
       await authService.athleteSignup(payload);
-      navigate('/login/athlete');
+      navigate('/login/athlete', { state: { success: 'Account created successfully! Please log in.' } });
     } catch (err) {
       setError(err.response?.data?.message || 'Signup failed. Please try again.');
     } finally {
@@ -554,6 +554,13 @@ const AthleteSignUp = () => {
           {step === 3 && <Step3 data={data} set={setData} />}
           {step === 4 && <Step4 data={data} set={setData} next={next} />}
           {step === 5 && <Step5 data={data} set={setData} />}
+
+          {/* Error message */}
+          {error && (
+            <div className="mt-4 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-semibold text-center">
+              ❌ {error}
+            </div>
+          )}
 
           {/* Navigation buttons */}
           <div className="flex items-center justify-between mt-8 pt-6 border-t border-slate-100 dark:border-slate-700">

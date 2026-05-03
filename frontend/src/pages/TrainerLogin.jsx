@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Trophy, ArrowLeft } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import Input from '../components/Input';
@@ -15,7 +15,9 @@ const TrainerLogin = () => {
   const [error, setError] = useState('');
   const [googleMsg, setGoogleMsg] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useDispatch();
+  const successMessage = location.state?.success || '';
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -50,6 +52,12 @@ const TrainerLogin = () => {
             <h1 className="text-3xl font-black text-slate-900 dark:text-white mb-2">Trainer Login</h1>
             <p className="text-slate-500 dark:text-slate-400 text-center font-medium">Welcome back! Sign in to manage your athletes</p>
           </div>
+
+          {successMessage && (
+            <div className="mb-4 p-3 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-600 dark:text-green-400 text-sm font-semibold text-center">
+              ✅ {successMessage}
+            </div>
+          )}
 
           {error && (
             <div className="mb-4 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-semibold text-center">

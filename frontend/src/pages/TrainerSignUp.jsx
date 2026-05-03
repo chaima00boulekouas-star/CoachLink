@@ -188,7 +188,7 @@ const TrainerSignUp = () => {
         isVerified: isVerified,
       };
       await authService.trainerSignup(payload);
-      navigate('/login/trainer');
+      navigate('/login/trainer', { state: { success: 'Account created successfully! Please log in.' } });
     } catch (err) {
       setError(err.response?.data?.message || 'Signup failed. Please try again.');
     } finally {
@@ -447,6 +447,13 @@ const TrainerSignUp = () => {
             </div>
 
           </div>
+
+          {/* Error message */}
+          {error && (
+            <div className="mt-6 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-semibold text-center">
+              ❌ {error}
+            </div>
+          )}
 
           {/* Submit button */}
           <div className="mt-6">
