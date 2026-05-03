@@ -4,7 +4,8 @@ import { getCoachDashboardStats } from "../controllers/dashboard.controller.js";
  import { isCoach } from "../middlewares/Role.Middleware.js";
 const router = express.Router();
 
-// Get dashboard stats for coach
+// Get dashboard stats for coach/trainer
 router.get("/coach", protect, isCoach, getCoachDashboardStats);
+router.get("/trainer", protect, isCoach, getCoachDashboardStats);
 
 export default router;

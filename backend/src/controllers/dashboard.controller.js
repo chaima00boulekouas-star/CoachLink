@@ -14,10 +14,19 @@ export const getCoachDashboardStats = async (req, res) => {
     const totalProducts = await Product.countDocuments({ trainer: trainerId });
 
     // 2. Get upcoming sessions count (only 'scheduled' ones)
-    const upcomingSessions = await Session.countDocuments({ 
+    const upcomingSessionsCount = await Session.countDocuments({ 
       trainer: trainerId, 
       status: "scheduled" 
     });
+
+    // 2b. Get the actual upcoming session documents (next 5)
+    const upcomingSessionsList = await Session.find({
+      trainer: trainerId,
+      status: "scheduled",
+    })
+      .populate("athlete", "name avatar")
+      .sort({ date: 1 })
+      .limit(5);
 
     // 3. Fetch all orders containing this trainer's products
     const orders = await Order.find({ "items.trainer": trainerId })
@@ -71,12 +80,13 @@ export const getCoachDashboardStats = async (req, res) => {
       stats: {
         totalEarnings,
         totalProducts,
-        upcomingSessions,
-        totalAthletes: uniqueAthletes.size, // Size of the Set gives the exact number of unique buyers
+        upcomingSessions: upcomingSessionsCount,
+        totalAthletes: uniqueAthletes.size,
         ratingAvg,
         ratingCount
       },
-      recentOrders
+      recentOrders,
+      upcomingSessions: upcomingSessionsList
     });
 
   } catch (error) {

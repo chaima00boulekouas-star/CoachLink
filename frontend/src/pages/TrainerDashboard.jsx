@@ -9,6 +9,7 @@ import StatCard from '../components/StatCard';
 import DashboardLayout from '../components/DashboardLayout';
 import { useSelector } from 'react-redux';
 import { trainerService } from '../api/dataService';
+import { getImageUrl } from '../utils/imageUrl';
 
 // Generate initials avatar with consistent color
 const Avatar = ({ name, className = '' }) => {
@@ -112,11 +113,11 @@ const TrainerDashboard = () => {
 
             {/* Stats Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
-              <StatCard label="Total Earnings" value={`$${stats.totalEarnings?.toLocaleString() || '0'}`} icon={DollarSign} iconBg="bg-primary-orange" trend={18} trendLabel="+18% this month" />
-              <StatCard label="Total Products" value={String(stats.totalProducts || 0)} icon={Package} iconBg="bg-primary-blue" trend={2} trendLabel="+2 this week" />
-              <StatCard label="Upcoming" value={`${stats.upcomingSessions || 0} Sessions`} icon={Calendar} iconBg="bg-green-500" trend={0} trendLabel="Next: Today 9AM" />
-              <StatCard label="Total Athletes" value={String(stats.totalAthletes || 0)} icon={Users} iconBg="bg-purple-500" trend={3} trendLabel="+3 this month" />
-              <StatCard label="Trainer Rating" value={String(stats.ratingAvg || '0.0')} icon={Star} iconBg="bg-amber-400" trend={5} trendLabel="↑ Top 5%" />
+              <StatCard label="Total Earnings" value={`$${stats.totalEarnings?.toLocaleString() || '0'}`} icon={DollarSign} iconBg="bg-primary-orange" />
+              <StatCard label="Total Products" value={String(stats.totalProducts || 0)} icon={Package} iconBg="bg-primary-blue" />
+              <StatCard label="Upcoming" value={`${stats.upcomingSessions || 0} Sessions`} icon={Calendar} iconBg="bg-green-500" />
+              <StatCard label="Total Athletes" value={String(stats.totalAthletes || 0)} icon={Users} iconBg="bg-purple-500" />
+              <StatCard label="Trainer Rating" value={String(stats.ratingAvg || '0.0')} icon={Star} iconBg="bg-amber-400" />
             </div>
 
             {/* Earnings Chart + Quick Actions + Sessions */}
@@ -163,25 +164,44 @@ const TrainerDashboard = () => {
                 <div className="bg-white dark:bg-dark-card rounded-2xl p-5 border border-slate-100 dark:border-dark-border shadow-sm">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="font-bold text-slate-900 dark:text-white text-sm uppercase tracking-wider">Upcoming Sessions</h3>
-                    <span className="bg-primary-blue text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">3</span>
+                    {upcomingSessions.length > 0 && (
+                      <span className="bg-primary-blue text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">{upcomingSessions.length}</span>
+                    )}
                   </div>
                   <div className="space-y-3">
-                    {upcomingSessions.map(s => (
-                      <div key={s.id} className="flex items-center gap-3">
-                        <div className={`${s.color} w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>
-                          {s.initials}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">{s.name}</p>
-                          <p className="text-xs text-slate-400">{s.time}</p>
-                        </div>
-                        <span className="text-xs font-semibold bg-indigo-50 dark:bg-indigo-900/20 text-primary-blue px-2 py-0.5 rounded-full">Scheduled</span>
-                      </div>
-                    ))}
+                    {upcomingSessions.length === 0 ? (
+                      <p className="text-sm text-slate-400 text-center py-4">No upcoming sessions</p>
+                    ) : (
+                      upcomingSessions.map(s => {
+                        const athleteName = s.athlete?.name || 'Athlete';
+                        const initials = athleteName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+                        const sessionDate = s.date ? new Date(s.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'TBD';
+                        const colors = ['bg-blue-500', 'bg-purple-500', 'bg-green-500', 'bg-orange-500', 'bg-pink-500'];
+                        const color = colors[athleteName.charCodeAt(0) % colors.length];
+                        return (
+                          <div key={s._id} className="flex items-center gap-3">
+                            {s.athlete?.avatar ? (
+                              <img src={getImageUrl(s.athlete.avatar)} alt={athleteName} className="w-9 h-9 rounded-full object-cover flex-shrink-0" />
+                            ) : (
+                              <div className={`${color} w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>
+                                {initials}
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">{athleteName}</p>
+                              <p className="text-xs text-slate-400">{sessionDate}</p>
+                            </div>
+                            <span className="text-xs font-semibold bg-indigo-50 dark:bg-indigo-900/20 text-primary-blue px-2 py-0.5 rounded-full capitalize">{s.status}</span>
+                          </div>
+                        );
+                      })
+                    )}
                   </div>
                 </div>
               </div>
             </div>
+
+
 
             {/* Recent Orders */}
             <div className="bg-white dark:bg-dark-card rounded-2xl border border-slate-100 dark:border-dark-border shadow-sm overflow-hidden">
@@ -262,28 +282,30 @@ const TrainerDashboard = () => {
           </div>
 
           {/* Right Sidebar - Profile Card */}
-          <div className="hidden xl:block w-64 flex-shrink-0 space-y-4">
+          <div className="hidden xl:block w-72 flex-shrink-0 space-y-6">
             {/* Profile Card */}
-            <div className="bg-white dark:bg-dark-card rounded-2xl overflow-hidden border border-slate-100 dark:border-dark-border shadow-sm">
-              <div className="h-24 bg-gradient-to-br from-primary-blue/20 to-indigo-200 dark:from-slate-700 dark:to-slate-600 relative">
-                {user?.coverImage && (
-                  <img src={user.coverImage} alt="cover" className="w-full h-full object-cover" />
-                )}
-              </div>
-              <div className="p-4 text-center -mt-8">
-                <div className="w-16 h-16 bg-primary-blue rounded-2xl mx-auto mb-3 overflow-hidden border-4 border-white dark:border-dark-card shadow-lg flex items-center justify-center">
+            <div className="bg-white dark:bg-dark-card rounded-3xl overflow-hidden border border-slate-100 dark:border-dark-border shadow-sm">
+              <div 
+                className="h-28 bg-slate-200 dark:bg-slate-700 bg-cover bg-center"
+                style={{ backgroundImage: `url('${user?.coverImage ? getImageUrl(user.coverImage) : 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=1000'}')` }}
+              />
+              <div className="p-6 text-center -mt-12">
+                <div className="relative inline-block mb-3">
                   {user?.avatar ? (
-                    <img src={user.avatar} alt={userName} className="w-full h-full object-cover" />
+                    <img 
+                      src={getImageUrl(user.avatar)} 
+                      alt={userName} 
+                      className="w-20 h-20 rounded-full object-cover border-4 border-white dark:border-dark-card shadow-xl bg-white" 
+                    />
                   ) : (
-                    <span className="text-white font-black text-lg">
-                      {userName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-                    </span>
+                    <Avatar name={userName} className="w-20 h-20 text-3xl border-4 border-white dark:border-dark-card shadow-xl" />
                   )}
+                  <div className="absolute bottom-1 right-1 w-4 h-4 bg-green-500 border-2 border-white dark:border-dark-card rounded-full shadow-sm" />
                 </div>
-                <h3 className="font-black text-slate-900 dark:text-white text-sm">{userName}</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">{user?.sport || 'Trainer'}</p>
+                <h3 className="font-black text-slate-900 dark:text-white text-base mb-0.5">{userName}</h3>
+                <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-4">Professional Trainer</p>
                 <Link to="/profile/me">
-                  <button className="w-full bg-primary-orange text-white text-xs font-bold py-2 rounded-xl hover:opacity-90 transition-opacity">
+                  <button className="w-full bg-primary-orange text-white text-sm font-bold py-3 rounded-2xl shadow-lg shadow-orange-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
                     View Profile
                   </button>
                 </Link>
