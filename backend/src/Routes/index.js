@@ -9,6 +9,7 @@ import paymentRoutes from "./PaymentRoutes.js";
 import dashboardRoutes from "./DashboardRoutes.js";
 import userRoutes from "./UserRoutes.js";
 import chatRoutes from "./ChatRoutes.js";
+import requestRoutes from "./RequestRoutes.js";
 
 const router = express.Router();
 
@@ -23,5 +24,6 @@ router.use("/api/payments", paymentRoutes);
 router.use("/api/dashboard", dashboardRoutes);
 router.use("/api/users", userRoutes);
 router.use("/api/chat", chatRoutes);
+router.use("/api/requests", requestRoutes);
 
 export default router;
