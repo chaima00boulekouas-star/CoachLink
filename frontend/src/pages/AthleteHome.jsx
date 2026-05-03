@@ -62,10 +62,10 @@ const RECOMMENDED = [
 ];
 
 const QUICK_ACTIONS = [
-  { icon: Search,      label: 'Find Trainers',    sub: 'Browse all coaches',      to: '/coaches',               color: 'bg-indigo-50 dark:bg-indigo-900/10 text-indigo-600' },
-  { icon: BookOpen,    label: 'My Programs',       sub: 'View active programs',    to: '/athlete/store',         color: 'bg-orange-50 dark:bg-orange-900/10 text-orange-500' },
-  { icon: MessageSquare, label: 'Messages',        sub: 'Your conversations',      to: '/requests',              color: 'bg-green-50 dark:bg-green-900/10 text-green-600' },
-  { icon: Calendar,    label: 'My Bookings',       sub: 'Upcoming sessions',       to: '/athlete/sessions',      color: 'bg-purple-50 dark:bg-purple-900/10 text-purple-600' },
+  { icon: Search, label: 'Find Trainers', sub: 'Browse all coaches', to: '/coaches', color: 'bg-indigo-50 dark:bg-indigo-900/10 text-indigo-600' },
+  { icon: BookOpen, label: 'My Programs', sub: 'View active programs', to: '/athlete/store', color: 'bg-orange-50 dark:bg-orange-900/10 text-orange-500' },
+  { icon: MessageSquare, label: 'Messages', sub: 'Your conversations', to: '/requests', color: 'bg-green-50 dark:bg-green-900/10 text-green-600' },
+  { icon: Calendar, label: 'My Bookings', sub: 'Upcoming sessions', to: '/athlete/sessions', color: 'bg-purple-50 dark:bg-purple-900/10 text-purple-600' },
 ];
 
 const CoachCard = ({ coach }) => (
@@ -105,117 +105,117 @@ const CoachCard = ({ coach }) => (
 const AthleteHome = () => {
   const user = useSelector((s) => s.auth.user);
 
-  const name     = user?.name     || 'Athlete';
+  const name = user?.name || 'Athlete';
   const location = user?.location || '';
-  const sport    = Array.isArray(user?.sports) ? user.sports[0] : (user?.sport || '');
-  const level    = user?.level    || '';
-  const age      = user?.age      || '';
+  const sport = Array.isArray(user?.sports) ? user.sports[0] : (user?.sport || '');
+  const level = user?.level || '';
+  const age = user?.age || '';
 
   return (
-  <DashboardLayout>
-    <div className="max-w-6xl mx-auto space-y-10">
+    <DashboardLayout>
+      <div className="max-w-6xl mx-auto space-y-10">
 
-      {/* Hero Banner */}
-      <div className="relative bg-gradient-to-r from-indigo-600 to-indigo-800 rounded-3xl overflow-hidden p-8 md:p-12 text-white">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-white rounded-full -translate-y-1/2 translate-x-1/3" />
-        </div>
-        <div className="relative max-w-xl">
-          <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur text-xs font-bold px-3 py-1.5 rounded-full mb-4">
-            <Zap size={12} /> Athlete Dashboard
+        {/* Hero Banner */}
+        <div className="relative bg-gradient-to-r from-indigo-600 to-indigo-800 rounded-3xl overflow-hidden p-8 md:p-12 text-white">
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-white rounded-full -translate-y-1/2 translate-x-1/3" />
           </div>
-          <h1 className="text-3xl md:text-4xl font-black mb-1 leading-tight">
-            Welcome back, {name.split(' ')[0]}! 👋
-          </h1>
-          {location && (
-            <p className="text-white/70 text-xs flex items-center gap-1 mb-2">
-              <MapPin size={11} /> {location}
+          <div className="relative max-w-xl">
+            <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur text-xs font-bold px-3 py-1.5 rounded-full mb-4">
+              <Zap size={12} /> Athlete Dashboard
+            </div>
+            <h1 className="text-3xl md:text-4xl font-black mb-1 leading-tight">
+              Welcome back, {name.split(' ')[0]}! 👋
+            </h1>
+            {location && (
+              <p className="text-white/70 text-xs flex items-center gap-1 mb-2">
+                <MapPin size={11} /> {location}
+              </p>
+            )}
+            <div className="flex flex-wrap gap-2 mb-4">
+              {sport && <span className="bg-white/20 text-xs font-bold px-2.5 py-1 rounded-full">🏅 {sport}</span>}
+              {level && <span className="bg-white/20 text-xs font-bold px-2.5 py-1 rounded-full">⭐ {level}</span>}
+              {age && <span className="bg-white/20 text-xs font-bold px-2.5 py-1 rounded-full">{age} years old</span>}
+            </div>
+            <p className="text-white/80 text-sm mb-6 leading-relaxed">
+              Browse top-rated trainers, book sessions, and start crushing your goals with a personalised growth plan.
             </p>
-          )}
-          <div className="flex flex-wrap gap-2 mb-4">
-            {sport  && <span className="bg-white/20 text-xs font-bold px-2.5 py-1 rounded-full">🏅 {sport}</span>}
-            {level  && <span className="bg-white/20 text-xs font-bold px-2.5 py-1 rounded-full">⭐ {level}</span>}
-            {age    && <span className="bg-white/20 text-xs font-bold px-2.5 py-1 rounded-full">{age} years old</span>}
-          </div>
-          <p className="text-white/80 text-sm mb-6 leading-relaxed">
-            Browse top-rated trainers, book sessions, and start crushing your goals with a personalised growth plan.
-          </p>
-          <div className="flex flex-wrap gap-3">
-            <Link to="/coaches">
-              <button className="bg-white text-indigo-600 text-sm font-bold px-6 py-3 rounded-xl hover:bg-white/90 transition-colors shadow-lg">
-                Browse Coaches
-              </button>
-            </Link>
-            <Link to="/athlete/profile">
-              <button className="bg-white/20 backdrop-blur text-white text-sm font-bold px-6 py-3 rounded-xl hover:bg-white/30 border border-white/30 transition-all">
-                My Profile
-              </button>
-            </Link>
-          </div>
-        </div>
-        <div className="hidden md:flex absolute right-8 bottom-0 items-end gap-3 h-full">
-          <TrendingUp size={120} className="text-white/10 mb-4" />
-        </div>
-      </div>
-
-      {/* Quick Actions */}
-      <div>
-        <h2 className="text-xl font-black text-slate-900 dark:text-white mb-5">Quick Actions</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          {QUICK_ACTIONS.map((action) => {
-            const Icon = action.icon;
-            return (
-              <Link key={action.to + action.label} to={action.to}>
-                <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-100 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-600 hover:-translate-y-1 transition-all duration-200 shadow-sm cursor-pointer group">
-                  <div className={`w-11 h-11 rounded-xl ${action.color} flex items-center justify-center mb-3`}>
-                    <Icon size={20} />
-                  </div>
-                  <p className="font-bold text-slate-900 dark:text-white text-sm">{action.label}</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{action.sub}</p>
-                </div>
+            <div className="flex flex-wrap gap-3">
+              <Link to="/coaches">
+                <button className="bg-white text-indigo-600 text-sm font-bold px-6 py-3 rounded-xl hover:bg-white/90 transition-colors shadow-lg">
+                  Browse Coaches
+                </button>
               </Link>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Recommended Coaches */}
-      <div>
-        <div className="flex items-center justify-between mb-5">
-          <div>
-            <h2 className="text-xl font-black text-slate-900 dark:text-white">Recommended for You</h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              {sport ? `Based on your sport: ${sport}` : 'Based on your profile'}
-            </p>
+              <Link to="/athlete/profile">
+                <button className="bg-white/20 backdrop-blur text-white text-sm font-bold px-6 py-3 rounded-xl hover:bg-white/30 border border-white/30 transition-all">
+                  My Profile
+                </button>
+              </Link>
+            </div>
           </div>
-          <Link to="/coaches" className="text-sm font-bold text-indigo-600 hover:underline flex items-center gap-1">
-            View all <ArrowRight size={14} />
-          </Link>
+          <div className="hidden md:flex absolute right-8 bottom-0 items-end gap-3 h-full">
+            <TrendingUp size={120} className="text-white/10 mb-4" />
+          </div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          {RECOMMENDED.map((coach) => (
-            <CoachCard key={coach.id} coach={coach} />
-          ))}
-        </div>
-      </div>
 
-      {/* Featured / Popular Coaches */}
-      <div>
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-xl font-black text-slate-900 dark:text-white">Popular Coaches</h2>
-          <Link to="/coaches" className="text-sm font-bold text-indigo-600 hover:underline flex items-center gap-1">
-            View all <ArrowRight size={14} />
-          </Link>
+        {/* Quick Actions */}
+        <div>
+          <h2 className="text-xl font-black text-slate-900 dark:text-white mb-5">Quick Actions</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {QUICK_ACTIONS.map((action) => {
+              const Icon = action.icon;
+              return (
+                <Link key={action.to + action.label} to={action.to}>
+                  <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-100 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-600 hover:-translate-y-1 transition-all duration-200 shadow-sm cursor-pointer group">
+                    <div className={`w-11 h-11 rounded-xl ${action.color} flex items-center justify-center mb-3`}>
+                      <Icon size={20} />
+                    </div>
+                    <p className="font-bold text-slate-900 dark:text-white text-sm">{action.label}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{action.sub}</p>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {FEATURED_COACHES.map((coach) => (
-            <CoachCard key={coach.id} coach={coach} />
-          ))}
-        </div>
-      </div>
 
-    </div>
-  </DashboardLayout>
+        {/* Recommended Coaches */}
+        <div>
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <h2 className="text-xl font-black text-slate-900 dark:text-white">Recommended for You</h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                {sport ? `Based on your sport: ${sport}` : 'Based on your profile'}
+              </p>
+            </div>
+            <Link to="/coaches" className="text-sm font-bold text-indigo-600 hover:underline flex items-center gap-1">
+              View all <ArrowRight size={14} />
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            {RECOMMENDED.map((coach) => (
+              <CoachCard key={coach.id} coach={coach} />
+            ))}
+          </div>
+        </div>
+
+        {/* Featured / Popular Coaches */}
+        <div>
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="text-xl font-black text-slate-900 dark:text-white">Popular Coaches</h2>
+            <Link to="/coaches" className="text-sm font-bold text-indigo-600 hover:underline flex items-center gap-1">
+              View all <ArrowRight size={14} />
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {FEATURED_COACHES.map((coach) => (
+              <CoachCard key={coach.id} coach={coach} />
+            ))}
+          </div>
+        </div>
+
+      </div>
+    </DashboardLayout>
   );
 };
 
