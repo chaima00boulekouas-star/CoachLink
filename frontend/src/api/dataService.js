@@ -363,8 +363,8 @@ export const settingsService = {
 
 export const adminService = {
   // Get dashboard stats
-  getDashboard: async () => {
-    const res = await api.get('/api/admin/dashboard');
+  getStats: async () => {
+    const res = await api.get('/api/admin/stats');
     return res.data;
   },
 
@@ -374,15 +374,39 @@ export const adminService = {
     return res.data;
   },
 
-  // Ban/unban user
-  toggleBan: async (userId) => {
-    const res = await api.put(`/api/admin/users/${userId}/toggle-ban`);
+  // Update user status
+  updateUserStatus: async (userId, status) => {
+    const res = await api.put(`/api/admin/users/${userId}/status`, { status });
     return res.data;
   },
 
   // Get reports
   getReports: async () => {
     const res = await api.get('/api/admin/reports');
+    return res.data;
+  },
+
+  // Update report status
+  updateReportStatus: async (id, status) => {
+    const res = await api.put(`/api/admin/reports/${id}`, { status });
+    return res.data;
+  },
+
+  // Get feedback
+  getFeedback: async () => {
+    const res = await api.get('/api/admin/feedback');
+    return res.data;
+  },
+
+  // Reply to feedback
+  replyFeedback: async (id, reply) => {
+    const res = await api.post(`/api/admin/feedback/${id}/reply`, { reply });
+    return res.data;
+  },
+
+  // Get all products
+  getProducts: async () => {
+    const res = await api.get('/api/admin/products');
     return res.data;
   },
 };

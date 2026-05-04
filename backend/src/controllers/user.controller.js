@@ -157,8 +157,11 @@ export const login = async (req, res) => {
       return res.status(401).json({ message: `No ${role} account found with this email` });
     }
 
-    if (user.isBanned) {
-      return res.status(403).json({ message: 'Your account has been suspended. Please contact support.' });
+    if (user.status !== 'active') {
+      const msg = user.status === 'banned' 
+        ? 'Your account has been banned. Please contact support.' 
+        : 'Your account has been suspended. Please contact support.';
+      return res.status(403).json({ message: msg });
     }
 
     // if (!user.isVerified) {
