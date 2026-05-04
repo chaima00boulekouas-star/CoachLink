@@ -2,9 +2,11 @@ import Conversation from "../Models/Conversation.Model.js";
 import User from "../Models/User.Model.js";
 import { createNotification } from "./notification.controller.js";
 
-// @desc    Get or create a conversation between two users
-// @route   POST /api/chat/conversation
-// @access  Private
+/**
+ * @desc    Get or create a conversation between two users
+ * @route   POST /api/chat/conversation
+ * @access  Private
+ */
 export const getOrCreateConversation = async (req, res) => {
   try {
     const { recipientId } = req.body;
@@ -50,9 +52,11 @@ export const getOrCreateConversation = async (req, res) => {
   }
 };
 
-// @desc    Get all conversations for the current user (deduplicated)
-// @route   GET /api/chat/conversations
-// @access  Private
+/**
+ * @desc    Get all conversations for the current user (deduplicated)
+ * @route   GET /api/chat/conversations
+ * @access  Private
+ */
 export const getConversations = async (req, res) => {
   try {
     const userId = req.user._id.toString();
@@ -94,9 +98,11 @@ export const getConversations = async (req, res) => {
   }
 };
 
-// @desc    Send a message in a conversation
-// @route   POST /api/chat/conversation/:conversationId/message
-// @access  Private
+/**
+ * @desc    Send a message in a conversation
+ * @route   POST /api/chat/conversation/:conversationId/message
+ * @access  Private
+ */
 export const sendMessage = async (req, res) => {
   try {
     const { conversationId } = req.params;
@@ -113,14 +119,7 @@ export const sendMessage = async (req, res) => {
     }
 
     // Verify user is a participant
-<<<<<<< HEAD
-    const isParticipant = conversation.participants.some(
-      (p) => p.toString() === userId
-    );
-    if (!isParticipant) {
-=======
     if (!conversation.participants.some(p => p.toString() === userId)) {
->>>>>>> 06b6f4a (Implement real-time message notifications and fix chat alignment identity)
       return res.status(403).json({ message: "Not a participant in this conversation" });
     }
 
@@ -139,38 +138,17 @@ export const sendMessage = async (req, res) => {
 
     await conversation.save();
 
-<<<<<<< HEAD
-    // Return the newly added message with sender populated
-    const savedConv = await Conversation.findById(conversationId)
-      .populate("messages.sender", "name avatar role");
-
-    const newMessage = savedConv.messages[savedConv.messages.length - 1];
-
-    // Notify the recipient
-    const recipientId = conversation.participants.find(p => p.toString() !== userId);
-    if (recipientId) {
-      createNotification({
-        recipient: recipientId,
-        type: 'message',
-        title: 'New Message',
-        message: `${newMessage.sender.name || 'Someone'} sent you a message`,
-        relatedId: conversationId,
-        relatedModel: 'Conversation'
-      }).catch(err => console.error("Failed to create message notification:", err));
-    }
-=======
     // Return the newly added message with populated sender
     const conversationWithSender = await Conversation.findById(conversationId)
       .populate("messages.sender", "name avatar role email");
     const newMessage = conversationWithSender.messages[conversationWithSender.messages.length - 1];
->>>>>>> 06b6f4a (Implement real-time message notifications and fix chat alignment identity)
 
     res.status(201).json({ message: newMessage });
 
     // Create a notification for the recipient
     const recipientId = conversation.participants.find(p => p.toString() !== userId);
     if (recipientId) {
-      await createNotification({
+      createNotification({
         recipient: recipientId,
         sender: userId,
         type: 'message',
@@ -185,9 +163,11 @@ export const sendMessage = async (req, res) => {
   }
 };
 
-// @desc    Get messages for a conversation
-// @route   GET /api/chat/conversation/:conversationId/messages
-// @access  Private
+/**
+ * @desc    Get messages for a conversation
+ * @route   GET /api/chat/conversation/:conversationId/messages
+ * @access  Private
+ */
 export const getMessages = async (req, res) => {
   try {
     const { conversationId } = req.params;
@@ -226,9 +206,11 @@ export const getMessages = async (req, res) => {
   }
 };
 
-// @desc    Delete duplicate conversations (cleanup utility)
-// @route   DELETE /api/chat/cleanup-duplicates
-// @access  Private
+/**
+ * @desc    Delete duplicate conversations (cleanup utility)
+ * @route   DELETE /api/chat/cleanup-duplicates
+ * @access  Private
+ */
 export const cleanupDuplicates = async (req, res) => {
   try {
     const userId = req.user._id.toString();
