@@ -1,5 +1,6 @@
 import express from "express";
 import trainerRoutes from "./TrainerRoutes.js";
+import athleteRoutes from "./AthleteRoutes.js";
 import storeRoutes from "./StoreRoutes.js";
 import productRoutes from "./ProductRoutes.js";
 import orderRoutes from "./OrderRoutes.js";
@@ -16,6 +17,7 @@ const router = express.Router();
 
 router.use("/api/trainer-profiles", trainerRoutes);
 router.use("/api/coach-profiles", trainerRoutes); // Keep for compatibility
+router.use("/api/athlete-profiles", athleteRoutes);
 router.use("/api/stores", storeRoutes);
 router.use("/api/products", productRoutes);
 router.use("/api/orders", orderRoutes);

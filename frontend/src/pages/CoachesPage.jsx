@@ -1,8 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
-import { Search, Star, Send } from 'lucide-react';
+import { Search, Star, Send, Heart } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
-import { trainerService } from '../api/dataService';
+import { useNavigate } from 'react-router-dom';
+import { trainerService, chatService, favoriteService } from '../api/dataService';
 
 const WILAYAS = [
   'All', "Adrar", "Chlef", "Laghouat", "Oum El Bouaghi", "Batna", "Béjaïa", "Biskra", "Béchar", "Blida", "Bouira",
@@ -32,6 +31,39 @@ const CoachesPage = () => {
   const [customPriceInput, setCustomPriceInput] = useState('');
   const [coaches, setCoaches]     = useState([]);
   const [loading, setLoading]     = useState(true);
+  const [favoriteIds, setFavoriteIds] = useState([]);
+  const navigate = useNavigate();
+
+  const startChat = async (trainerId) => {
+    try {
+      const data = await chatService.getOrCreateConversation(trainerId);
+      navigate(`/chat/${data.conversation._id}`);
+    } catch (err) {
+      console.error('Failed to start chat:', err);
+    }
+  };
+
+  const toggleFavorite = async (trainerId) => {
+    try {
+      const res = await favoriteService.toggle(trainerId);
+      setFavoriteIds(res.favorites || []);
+    } catch (err) {
+      console.error('Failed to toggle favorite:', err);
+    }
+  };
+
+  const fetchFavorites = useCallback(async () => {
+    try {
+      const res = await favoriteService.getAll();
+      setFavoriteIds((res.favorites || []).map(f => f._id || f));
+    } catch (err) {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchFavorites();
+  }, [fetchFavorites]);
 
   const fetchTrainers = useCallback(async () => {
     setLoading(true);
@@ -235,9 +267,21 @@ const CoachesPage = () => {
                       alt={coach.name}
                       className="w-full h-full object-cover"
                     />
-                    <div className="absolute top-2 right-2 bg-white/90 dark:bg-slate-800/90 backdrop-blur rounded-lg px-2 py-1 flex items-center gap-1">
-                      <Star size={11} className="fill-amber-400 text-amber-400" />
-                      <span className="text-xs font-bold text-slate-900 dark:text-white">{coach.rating}</span>
+                    <div className="absolute top-2 right-2 flex flex-col gap-2">
+                      <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur rounded-lg px-2 py-1 flex items-center gap-1 shadow-sm">
+                        <Star size={11} className="fill-amber-400 text-amber-400" />
+                        <span className="text-xs font-bold text-slate-900 dark:text-white">{coach.rating}</span>
+                      </div>
+                      <button 
+                        onClick={(e) => { e.preventDefault(); toggleFavorite(coach._id || coach.id); }}
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all shadow-sm ${
+                          favoriteIds.includes(coach._id || coach.id)
+                            ? 'bg-red-500 text-white'
+                            : 'bg-white/90 dark:bg-slate-800/90 text-slate-400 hover:text-red-500'
+                        }`}
+                      >
+                        <Heart size={14} className={favoriteIds.includes(coach._id || coach.id) ? 'fill-current' : ''} />
+                      </button>
                     </div>
                   </div>
                   <div className="p-5">
@@ -251,7 +295,10 @@ const CoachesPage = () => {
                       ))}
                     </div>
                     <div className="flex items-center gap-2">
-                      <button className="w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-600 flex items-center justify-center text-slate-500 hover:text-indigo-600 hover:border-indigo-400 transition-all flex-shrink-0">
+                      <button
+                        onClick={() => startChat(coach._id || coach.id)}
+                        className="w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-600 flex items-center justify-center text-slate-500 hover:text-indigo-600 hover:border-indigo-400 transition-all flex-shrink-0"
+                      >
                         <Send size={15} />
                       </button>
                       <Link to={`/trainer/${coach._id || coach.id}`} className="flex-1">

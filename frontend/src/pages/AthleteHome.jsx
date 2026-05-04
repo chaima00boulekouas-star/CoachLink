@@ -64,7 +64,7 @@ const RECOMMENDED = [
 const QUICK_ACTIONS = [
   { icon: Search, label: 'Find Trainers', sub: 'Browse all coaches', to: '/coaches', color: 'bg-indigo-50 dark:bg-indigo-900/10 text-indigo-600' },
   { icon: BookOpen, label: 'My Programs', sub: 'View active programs', to: '/athlete/store', color: 'bg-orange-50 dark:bg-orange-900/10 text-orange-500' },
-  { icon: MessageSquare, label: 'Messages', sub: 'Your conversations', to: '/requests', color: 'bg-green-50 dark:bg-green-900/10 text-green-600' },
+  { icon: MessageSquare, label: 'Messages', sub: 'Your conversations', to: '/chat', color: 'bg-green-50 dark:bg-green-900/10 text-green-600' },
   { icon: Calendar, label: 'My Bookings', sub: 'Upcoming sessions', to: '/athlete/sessions', color: 'bg-purple-50 dark:bg-purple-900/10 text-purple-600' },
 ];
 

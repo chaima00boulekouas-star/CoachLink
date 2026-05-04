@@ -1,5 +1,6 @@
 import Conversation from "../Models/Conversation.Model.js";
 import User from "../Models/User.Model.js";
+import { createNotification } from "./notification.controller.js";
 
 // @desc    Get or create a conversation between two users
 // @route   POST /api/chat/conversation
@@ -139,6 +140,19 @@ export const sendMessage = async (req, res) => {
       .populate("messages.sender", "name avatar role");
 
     const newMessage = savedConv.messages[savedConv.messages.length - 1];
+
+    // Notify the recipient
+    const recipientId = conversation.participants.find(p => p.toString() !== userId);
+    if (recipientId) {
+      createNotification({
+        recipient: recipientId,
+        type: 'message',
+        title: 'New Message',
+        message: `${newMessage.sender.name || 'Someone'} sent you a message`,
+        relatedId: conversationId,
+        relatedModel: 'Conversation'
+      }).catch(err => console.error("Failed to create message notification:", err));
+    }
 
     res.status(201).json({ message: newMessage });
   } catch (error) {

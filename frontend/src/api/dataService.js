@@ -314,13 +314,13 @@ export const notificationService = {
 export const favoriteService = {
   // Get favorites
   getAll: async () => {
-    const res = await api.get('/api/favorites');
+    const res = await api.get('/api/athlete-profiles/favorites');
     return res.data;
   },
 
   // Toggle favorite
   toggle: async (trainerId) => {
-    const res = await api.post(`/api/favorites/${trainerId}`);
+    const res = await api.post(`/api/athlete-profiles/favorites/${trainerId}`);
     return res.data;
   },
 };

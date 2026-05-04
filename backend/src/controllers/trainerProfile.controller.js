@@ -1,5 +1,6 @@
 import TrainerProfile from "../Models/TrainerProfile.Model.js";
 import User from "../Models/User.Model.js";
+import AthleteProfile from "../Models/AthleteProfile.Model.js";
 
 // @desc    Get all trainers with filters
 // @route   GET /api/trainer-profiles
@@ -136,15 +137,20 @@ export const getCoachProfile = async (req, res) => {
 };
 
 // @desc    Toggle favorite athlete
-// @route   POST /api/coach-profiles/favorites/:athleteId
+// @route   POST /api/trainer-profiles/favorites/:athleteId
 // @access  Private (Trainer)
 export const toggleFavorite = async (req, res) => {
   try {
     const { athleteId } = req.params;
-    const profile = await TrainerProfile.findOne({ user: req.user.id });
+    let profile = await TrainerProfile.findOne({ user: req.user.id });
 
     if (!profile) {
-      return res.status(404).json({ message: "Trainer profile not found" });
+      // Auto-create a minimal trainer profile so favorites still work
+      profile = await TrainerProfile.create({
+        user: req.user.id,
+        specialization: 'General',
+        favorites: [],
+      });
     }
 
     const index = profile.favorites.indexOf(athleteId);
@@ -162,21 +168,43 @@ export const toggleFavorite = async (req, res) => {
 };
 
 // @desc    Get trainer favorites
-// @route   GET /api/coach-profiles/favorites
+// @route   GET /api/trainer-profiles/favorites
 // @access  Private (Trainer)
 export const getFavorites = async (req, res) => {
   try {
-    const profile = await TrainerProfile.findOne({ user: req.user.id })
+    let profile = await TrainerProfile.findOne({ user: req.user.id })
       .populate({
         path: 'favorites',
-        select: 'name email avatar location',
+        select: 'name email avatar role createdAt',
       });
 
     if (!profile) {
-      return res.status(404).json({ message: "Trainer profile not found" });
+      // No profile yet — return empty favorites instead of 404
+      return res.status(200).json({ favorites: [] });
     }
 
-    res.status(200).json({ favorites: profile.favorites });
+    // Enrich each favorite athlete with their AthleteProfile data
+    const favoriteUsers = profile.favorites || [];
+    const athleteIds = favoriteUsers.map(u => u._id);
+    const athleteProfiles = await AthleteProfile.find({ user: { $in: athleteIds } }).lean();
+    const profileMap = {};
+    athleteProfiles.forEach(p => {
+      profileMap[p.user.toString()] = p;
+    });
+
+    const enriched = favoriteUsers.map(u => {
+      const uObj = u.toObject ? u.toObject() : u;
+      const ap = profileMap[uObj._id.toString()] || {};
+      return {
+        ...uObj,
+        sports: ap.sports || [],
+        level: ap.level || null,
+        goal: ap.goal || null,
+        profileLocation: ap.location || null,
+      };
+    });
+
+    res.status(200).json({ favorites: enriched });
   } catch (error) {
     res.status(500).json({ message: "Failed to fetch favorites", error: error.message });
   }

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, Check, CheckCheck, Trash2, Star, Calendar, UserPlus, UserCheck, UserX, ShoppingBag } from 'lucide-react';
+import { Bell, Check, CheckCheck, Trash2, Star, Calendar, UserPlus, UserCheck, UserX, ShoppingBag, MessageCircle } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 import { useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { setNotificationCount } from '../redux/store';
 import { notificationService } from '../api/dataService';
 
@@ -13,6 +14,7 @@ const typeConfig = {
   order:            { icon: ShoppingBag, color: 'bg-primary-orange/10 text-primary-orange' },
   review:           { icon: Star,        color: 'bg-amber-100 dark:bg-amber-900/20 text-amber-500' },
   system:           { icon: Bell,        color: 'bg-slate-100 dark:bg-slate-700 text-slate-500' },
+  message:          { icon: MessageCircle, color: 'bg-blue-100 dark:bg-blue-900/20 text-blue-500' },
 };
 
 const timeAgo = (dateStr) => {
@@ -29,13 +31,14 @@ const timeAgo = (dateStr) => {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 };
 
-const FILTERS = ['All', 'Unread', 'Sessions', 'Requests'];
+const FILTERS = ['All', 'Unread', 'Sessions', 'Requests', 'Messages'];
 
 const AthleteNotificationsPage = () => {
   const [items, setItems]     = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter]   = useState('All');
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchNotifications = async () => {
@@ -57,6 +60,7 @@ const AthleteNotificationsPage = () => {
     if (filter === 'Unread')   return !n.read;
     if (filter === 'Sessions') return n.type === 'session';
     if (filter === 'Requests') return n.type === 'request' || n.type === 'request_accepted' || n.type === 'request_declined';
+    if (filter === 'Messages') return n.type === 'message';
     return true;
   });
 
@@ -149,11 +153,17 @@ const AthleteNotificationsPage = () => {
             return (
               <div
                 key={n._id}
-                className={`flex items-start gap-4 p-4 rounded-2xl border transition-all group ${
+                className={`flex items-start gap-4 p-4 rounded-2xl border transition-all group cursor-pointer ${
                   n.read
                     ? 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700'
                     : 'bg-indigo-50/50 dark:bg-indigo-900/10 border-indigo-200/50 dark:border-indigo-800/50'
                 }`}
+                onClick={() => {
+                  if (n.type === 'message' && n.relatedId) {
+                    markRead(n._id);
+                    navigate(`/chat/${n.relatedId}`);
+                  }
+                }}
               >
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${cfg.color}`}>
                   <Icon size={18} />
