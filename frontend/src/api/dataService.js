@@ -138,6 +138,12 @@ export const requestService = {
 // ── Sessions API Service ──────────────────────────────────────────────────
 
 export const sessionService = {
+  // Create a new session (trainer)
+  create: async (data) => {
+    const res = await api.post('/api/sessions', data);
+    return res.data;
+  },
+
   // Get sessions for current trainer
   getTrainerSessions: async () => {
     const res = await api.get('/api/sessions/trainer');
@@ -153,6 +159,12 @@ export const sessionService = {
   // Update session status
   updateStatus: async (sessionId, status) => {
     const res = await api.put(`/api/sessions/${sessionId}/status`, { status });
+    return res.data;
+  },
+
+  // Get accepted athletes (for trainer's scheduling dropdown)
+  getAcceptedAthletes: async () => {
+    const res = await api.get('/api/sessions/accepted-athletes');
     return res.data;
   },
 };
@@ -278,9 +290,21 @@ export const notificationService = {
     return res.data;
   },
 
+  // Mark all as read
+  markAllRead: async () => {
+    const res = await api.put('/api/notifications/read-all');
+    return res.data;
+  },
+
   // Get unread count
   getUnreadCount: async () => {
     const res = await api.get('/api/notifications/unread-count');
+    return res.data;
+  },
+
+  // Delete notification
+  delete: async (notifId) => {
+    const res = await api.delete(`/api/notifications/${notifId}`);
     return res.data;
   },
 };
@@ -383,6 +407,12 @@ export const chatService = {
   // Send a message
   sendMessage: async (conversationId, text) => {
     const res = await api.post(`/api/chat/conversation/${conversationId}/message`, { text });
+    return res.data;
+  },
+
+  // Cleanup duplicate conversations
+  cleanupDuplicates: async () => {
+    const res = await api.delete('/api/chat/cleanup-duplicates');
     return res.data;
   },
 };

@@ -1,23 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Star, Check, ShoppingBag, Send, X, MapPin, Award } from 'lucide-react';
+import { Star, Check, ShoppingBag, Send, X, MapPin, Award, AlertCircle } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
-import { useDispatch } from 'react-redux';
-import { cancelAthleteRequest } from '../redux/store';
-import { productService, trainerService } from '../api/dataService';
+import { useSelector } from 'react-redux';
+import { productService, trainerService, requestService } from '../api/dataService';
 import { getImageUrl, FALLBACK_PRODUCT_IMAGE } from '../utils/imageUrl';
-
-const PLANS = [
-  { id: 'starter',  name: 'Starter',  price: '$49', period: '/month', popular: false, features: ['3 sessions/week', 'Basic nutrition guide', 'Email support'] },
-  { id: 'elite',    name: 'Elite',    price: '$99', period: '/month', popular: true,  features: ['6 sessions/week', 'Custom nutrition plan', 'Priority support', '1:1 monthly check-in', 'Progress tracking'] },
-  { id: 'champion', name: 'Champion', price: '$149', period: '/month', popular: false, features: ['Unlimited sessions', 'Custom nutrition plan', '24/7 coach access', 'Weekly video calls'] },
-];
 
 const TAG_COLORS = { 'Best Seller': 'bg-amber-500', 'New': 'bg-green-500', 'Sale': 'bg-red-500', 'Popular': 'bg-indigo-600' };
 
 const CoachProfile = () => {
-  const { id }     = useParams();
-  const dispatch   = useDispatch();
+  const { id }   = useParams();
+  const user     = useSelector((s) => s.auth.user);
   
   const [coach, setCoach]           = useState(null);
   const [products, setProducts]     = useState([]);
@@ -26,6 +19,9 @@ const CoachProfile = () => {
   const [reqMessage, setReqMessage] = useState('');
   const [showForm, setShowForm]     = useState(false);
   const [cart, setCart]             = useState([]);
+  const [sending, setSending]       = useState(false);
+  const [requestError, setRequestError] = useState('');
+  const [existingRequestId, setExistingRequestId] = useState(null);
 
   useEffect(() => {
     const fetchCoachData = async () => {
@@ -37,7 +33,6 @@ const CoachProfile = () => {
         ]);
         
         const p = profileRes.profile;
-        // Map to UI-friendly structure
         setCoach({
           name: p.user?.name || 'Coach',
           sport: p.sports?.[0] || p.specialization || 'Fitness',
@@ -46,10 +41,10 @@ const CoachProfile = () => {
           image: getImageUrl(p.user?.avatar, 'https://images.unsplash.com/photo-1574680096145-d05b474e2155?auto=format&fit=crop&q=80&w=600'),
           rating: p.ratingAvg || 5.0,
           reviews: p.ratingCount || 0,
-          athletes: 0, // Placeholder or fetch if available
           location: p.location || 'Online',
           experience: p.experience || 'N/A',
-          specialization: p.specialization
+          specialization: p.specialization,
+          price: p.price
         });
         
         setProducts(productsRes.products || []);
@@ -62,11 +57,53 @@ const CoachProfile = () => {
     fetchCoachData();
   }, [id]);
 
-  const doRequest = () => {
+  // Check if athlete already has a pending request with this trainer
+  useEffect(() => {
+    const checkExistingRequest = async () => {
+      if (!user) return;
+      try {
+        const res = await requestService.getOutgoing();
+        const pending = res.requests?.find(
+          r => r.trainer?._id === id && r.status === 'pending'
+        );
+        if (pending) {
+          setRequested(true);
+          setExistingRequestId(pending._id);
+        }
+      } catch (err) {
+        // Silently ignore — athlete may not be logged in
+      }
+    };
+    checkExistingRequest();
+  }, [id, user]);
+
+  const doRequest = async () => {
     if (!reqMessage.trim()) return;
-    setRequested(true);
-    setShowForm(false);
-    // In a real app, you'd call requestService.send(id, { message: reqMessage })
+    setRequestError('');
+    setSending(true);
+    try {
+      const res = await requestService.send(id, { message: reqMessage });
+      setRequested(true);
+      setShowForm(false);
+      setExistingRequestId(res.request?._id);
+      setReqMessage('');
+    } catch (err) {
+      console.error('Failed to send request:', err);
+      setRequestError(err.response?.data?.message || 'Failed to send request. Please try again.');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const doCancelRequest = async () => {
+    if (!existingRequestId) return;
+    try {
+      await requestService.cancel(existingRequestId);
+      setRequested(false);
+      setExistingRequestId(null);
+    } catch (err) {
+      console.error('Failed to cancel request:', err);
+    }
   };
 
   const addToCart = (p) => setCart((prev) => prev.find((i) => i._id === p._id) ? prev : [...prev, p]);
@@ -117,6 +154,13 @@ const CoachProfile = () => {
                   {coach.location}
                 </div>
               </div>
+              {coach.price > 0 && (
+                <div className="mb-4">
+                  <span className="bg-orange-500/20 text-orange-300 text-sm font-bold px-4 py-1.5 rounded-full">
+                    {coach.price} DA / session
+                  </span>
+                </div>
+              )}
               <p className="text-white/80 text-sm leading-relaxed max-w-lg mb-8">{coach.bio}</p>
               <div className="flex flex-wrap gap-3">
                 {requested ? (
@@ -125,7 +169,7 @@ const CoachProfile = () => {
                       <Check size={15} /> Request Sent!
                     </span>
                     <button
-                      onClick={() => { setRequested(false); dispatch(cancelAthleteRequest(999)); }}
+                      onClick={doCancelRequest}
                       className="text-white/60 text-xs hover:text-white transition-colors flex items-center gap-1"
                     >
                       <X size={13} /> Cancel
@@ -136,7 +180,7 @@ const CoachProfile = () => {
                     onClick={() => setShowForm((p) => !p)}
                     className="bg-orange-500 text-white text-sm font-bold px-8 py-4 rounded-2xl hover:opacity-90 transition-all shadow-lg shadow-orange-500/30 flex items-center gap-2 active:scale-95"
                   >
-                    <Send size={15} /> Send Request
+                    <Send size={15} /> Send Training Request
                   </button>
                 )}
               </div>
@@ -150,75 +194,48 @@ const CoachProfile = () => {
         {/* Request Form */}
         {showForm && !requested && (
           <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700 p-8 shadow-sm">
-            <h3 className="font-black text-slate-900 dark:text-white text-xl mb-4">Send a Training Request</h3>
+            <h3 className="font-black text-slate-900 dark:text-white text-xl mb-2">Send a Training Request</h3>
+            <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">
+              Tell {coach.name} about your goals and what you'd like to achieve. They will review your request and respond.
+            </p>
             <textarea
               value={reqMessage}
               onChange={(e) => setReqMessage(e.target.value)}
-              placeholder={`Tell ${coach.name} about your goals, current level, and what you'd like to work on...`}
-              rows={4}
-              className="w-full px-5 py-4 rounded-2xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all resize-none mb-6"
+              placeholder={`Hi ${coach.name}, I'm interested in training with you. My goals are...`}
+              rows={5}
+              className="w-full px-5 py-4 rounded-2xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all resize-none mb-4"
             />
+
+            {requestError && (
+              <div className="flex items-center gap-2 p-3 mb-4 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 rounded-xl">
+                <AlertCircle size={16} className="text-red-500 flex-shrink-0" />
+                <p className="text-xs font-bold text-red-600 dark:text-red-400">{requestError}</p>
+              </div>
+            )}
+
             <div className="flex gap-4">
               <button
                 onClick={doRequest}
-                disabled={!reqMessage.trim()}
+                disabled={!reqMessage.trim() || sending}
                 className="flex items-center gap-2 bg-orange-500 text-white font-bold px-8 py-4 rounded-2xl hover:opacity-90 transition-all shadow-lg shadow-orange-500/20 disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                <Send size={15} /> Send Request
+                {sending ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <Send size={15} /> Send Request
+                  </>
+                )}
               </button>
-              <button onClick={() => setShowForm(false)} className="px-6 py-4 rounded-2xl border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 font-bold text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+              <button onClick={() => { setShowForm(false); setRequestError(''); }} className="px-6 py-4 rounded-2xl border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 font-bold text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
                 Cancel
               </button>
             </div>
           </div>
         )}
-
-        {/* Pricing Plans */}
-        <div>
-          <div className="text-center mb-10">
-            <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-2">Training Programs</h2>
-            <p className="text-slate-500 dark:text-slate-400">Choose the plan that suits your ambition</p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {PLANS.map((plan) => (
-              <div
-                key={plan.id}
-                className={`relative rounded-[2rem] p-8 border hover:shadow-xl transition-all duration-300 ${
-                  plan.popular ? 'bg-slate-900 dark:bg-slate-800 border-slate-700 ring-4 ring-indigo-500/10' : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700'
-                }`}
-              >
-                {plan.popular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-indigo-600 text-white text-[10px] font-black px-4 py-1.5 rounded-full tracking-wider">MOST POPULAR</div>
-                )}
-                <h3 className={`text-xl font-black mb-1 ${plan.popular ? 'text-white' : 'text-slate-900 dark:text-white'}`}>{plan.name}</h3>
-                <div className="flex items-end gap-1 mb-6">
-                  <span className={`text-4xl font-black ${plan.popular ? 'text-white' : 'text-slate-900 dark:text-white'}`}>{plan.price}</span>
-                  <span className={`text-sm mb-1 font-bold ${plan.popular ? 'text-white/60' : 'text-slate-400'}`}>{plan.period}</span>
-                </div>
-                <ul className="space-y-4 mb-8">
-                  {plan.features.map((f) => (
-                    <li key={f} className={`flex items-start gap-3 text-sm ${plan.popular ? 'text-white/80' : 'text-slate-600 dark:text-slate-400'}`}>
-                      <div className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${plan.popular ? 'bg-indigo-500/20 text-indigo-400' : 'bg-green-100 dark:bg-green-900/20 text-green-600'}`}>
-                        <Check size={12} strokeWidth={3} />
-                      </div>
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-                <button
-                  onClick={() => setShowForm(true)}
-                  className={`w-full py-4 rounded-2xl font-bold text-sm transition-all active:scale-95 ${
-                    plan.popular
-                      ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-500/20'
-                      : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
-                  }`}
-                >
-                  Get Started
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
 
         {/* Store Products */}
         {products.length > 0 && (

@@ -1,126 +1,183 @@
 import Session from "../Models/Session.Model.js";
 import User from "../Models/User.Model.js";
+import { createNotification } from "./notification.controller.js";
 
-// @desc    Book a new session with a coach
+// @desc    Create a session (trainer schedules for their athlete)
 // @route   POST /api/sessions
-// @access  Private (Logged in Trainee)
-export const bookSession = async (req, res) => {
+// @access  Private (Trainer)
+export const createSession = async (req, res) => {
   try {
-    const { trainerId, date } = req.body;
-    const athleteId = req.user.id;
+    const { athleteId, date, title, duration, location, notes } = req.body;
+    const trainerId = req.user._id;
 
-    if (!trainerId || !date) {
-      return res.status(400).json({ message: "Trainer ID and Session Date are required." });
+    if (!athleteId || !date) {
+      return res.status(400).json({ message: "Athlete ID and date are required." });
     }
 
-    // Security Check: Verify that the trainer actually exists in the database
-    const trainerExists = await User.findById(trainerId);
-    if (!trainerExists || trainerExists.role !== "trainer") {
-      return res.status(404).json({ message: "Invalid Trainer ID - Trainer not found." });
+    // Verify athlete exists
+    const athlete = await User.findById(athleteId);
+    if (!athlete || athlete.role !== "athlete") {
+      return res.status(404).json({ message: "Athlete not found." });
     }
 
-    // You can add logic here to check if the date is in the past
     if (new Date(date) < new Date()) {
-      return res.status(400).json({ message: "Cannot book a session in the past." });
+      return res.status(400).json({ message: "Cannot schedule a session in the past." });
     }
 
-    // Create the session based on your schema
-    const newSession = new Session({
+    const session = await Session.create({
       trainer: trainerId,
       athlete: athleteId,
-      date: date,
-      status: "scheduled", // Default status as per your enum
+      date,
+      title: title || "Training Session",
+      duration: duration || "1 hour",
+      location: location || "TBD",
+      notes: notes || "",
+      status: "scheduled",
     });
 
-    await newSession.save();
+    await session.populate("athlete", "name email avatar");
 
-    res.status(201).json({ 
-      message: "Session booked successfully", 
-      session: newSession 
+    // Notify the athlete
+    const sessionDate = new Date(date).toLocaleDateString("en-US", {
+      weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit"
     });
+    await createNotification({
+      recipient: athleteId,
+      type: "session",
+      title: "New Session Scheduled",
+      message: `${req.user.name} scheduled a training session for ${sessionDate}. ${title || ""}`,
+      relatedId: session._id,
+      relatedModel: "Session",
+    });
+
+    res.status(201).json({ message: "Session created successfully", session });
   } catch (error) {
-    console.error("Book Session Error:", error);
-    res.status(500).json({ message: "Failed to book session", error: error.message });
+    console.error("Create Session Error:", error);
+    res.status(500).json({ message: "Failed to create session", error: error.message });
   }
 };
 
-// @desc    Get all scheduled sessions for the logged-in Trainer
+// @desc    Get all sessions for the logged-in Trainer
 // @route   GET /api/sessions/trainer
-// @access  Private (Trainer only)
+// @access  Private (Trainer)
 export const getCoachSessions = async (req, res) => {
   try {
-    const trainerId = req.user.id;
+    const sessions = await Session.find({ trainer: req.user._id })
+      .populate("athlete", "name email avatar")
+      .sort({ date: -1 });
 
-    // Fetch sessions and populate athlete details. 
-    // sort({ date: 1 }) brings the closest upcoming sessions first.
-    const sessions = await Session.find({ trainer: trainerId })
-      .populate("athlete", "name email")
-      .sort({ date: 1 });
-
-    res.status(200).json({ count: sessions.length, sessions });
+    res.status(200).json({ sessions });
   } catch (error) {
     console.error("Get Trainer Sessions Error:", error);
     res.status(500).json({ message: "Failed to fetch trainer sessions", error: error.message });
   }
 };
 
-// @desc    Get all booked sessions for the logged-in Athlete
+// @desc    Get all sessions for the logged-in Athlete
 // @route   GET /api/sessions/athlete
-// @access  Private (Athlete only)
+// @access  Private (Athlete)
 export const getTraineeSessions = async (req, res) => {
   try {
-    const athleteId = req.user.id;
+    const sessions = await Session.find({ athlete: req.user._id })
+      .populate("trainer", "name email avatar")
+      .sort({ date: -1 });
 
-    // Fetch sessions and populate trainer details.
-    const sessions = await Session.find({ athlete: athleteId })
-      .populate("trainer", "name email")
-      .sort({ date: 1 });
-
-    res.status(200).json({ count: sessions.length, sessions });
+    res.status(200).json({ sessions });
   } catch (error) {
     console.error("Get Athlete Sessions Error:", error);
     res.status(500).json({ message: "Failed to fetch athlete sessions", error: error.message });
   }
 };
 
-// @desc    Update session status (e.g., mark as "done" or "cancelled")
+// @desc    Update session status
 // @route   PUT /api/sessions/:id/status
-// @access  Private (Coach or Trainee)
+// @access  Private (Trainer or Athlete)
 export const updateSessionStatus = async (req, res) => {
   try {
     const { status } = req.body;
     const sessionId = req.params.id;
-    const userId = req.user.id;
+    const userId = req.user._id.toString();
 
-    // Validate the status against your enum
     const validStatuses = ["scheduled", "done", "cancelled"];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ message: "Invalid status value." });
     }
 
-    const session = await Session.findById(sessionId);
+    const session = await Session.findById(sessionId)
+      .populate("trainer", "name")
+      .populate("athlete", "name");
     if (!session) {
       return res.status(404).json({ message: "Session not found." });
     }
 
-    // Security Check: Only the specific trainer or athlete involved can update it
-    const isTrainer = session.trainer.toString() === userId.toString();
-    const isAthlete = session.athlete.toString() === userId.toString();
+    const isTrainer = session.trainer._id.toString() === userId;
+    const isAthlete = session.athlete._id.toString() === userId;
 
     if (!isTrainer && !isAthlete) {
       return res.status(403).json({ message: "Not authorized to update this session." });
     }
 
-    // Update status and save
     session.status = status;
     await session.save();
 
-    res.status(200).json({ 
-      message: `Session status updated to ${status}`, 
-      session 
-    });
+    // Notify the other party
+    const recipientId = isTrainer ? session.athlete._id : session.trainer._id;
+    const actorName = isTrainer ? session.trainer.name : session.athlete.name;
+    
+    if (status === "cancelled") {
+      await createNotification({
+        recipient: recipientId,
+        type: "session",
+        title: "Session Cancelled",
+        message: `${actorName} cancelled the training session.`,
+        relatedId: session._id,
+        relatedModel: "Session",
+      });
+    } else if (status === "done") {
+      await createNotification({
+        recipient: recipientId,
+        type: "session",
+        title: "Session Completed",
+        message: `Training session with ${actorName} has been marked as completed.`,
+        relatedId: session._id,
+        relatedModel: "Session",
+      });
+    }
+
+    res.status(200).json({ message: `Session status updated to ${status}`, session });
   } catch (error) {
     console.error("Update Session Status Error:", error);
     res.status(500).json({ message: "Failed to update session status", error: error.message });
+  }
+};
+
+// @desc    Get accepted athletes (for trainer's session scheduling dropdown)
+// @route   GET /api/sessions/accepted-athletes
+// @access  Private (Trainer)
+export const getAcceptedAthletes = async (req, res) => {
+  try {
+    const CoachingRequest = (await import("../Models/CoachingRequest.Model.js")).default;
+    const acceptedRequests = await CoachingRequest.find({
+      trainer: req.user._id,
+      status: "accepted",
+    }).populate("athlete", "name email avatar");
+
+    // Get unique athletes
+    const athleteMap = {};
+    acceptedRequests.forEach(r => {
+      if (r.athlete) {
+        athleteMap[r.athlete._id.toString()] = {
+          _id: r.athlete._id,
+          name: r.athlete.name,
+          email: r.athlete.email,
+          avatar: r.athlete.avatar,
+        };
+      }
+    });
+
+    res.json({ athletes: Object.values(athleteMap) });
+  } catch (err) {
+    console.error("Get accepted athletes error:", err);
+    res.status(500).json({ message: err.message || "Server error" });
   }
 };

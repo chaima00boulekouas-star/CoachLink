@@ -4,13 +4,13 @@ const coachingRequestSchema = new mongoose.Schema(
   {
     athlete: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "AthleteProfile",
+      ref: "User",
       required: true,
       index: true,
     },
     trainer: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "TrainerProfile",
+      ref: "User",
       required: true,
       index: true,
     },
