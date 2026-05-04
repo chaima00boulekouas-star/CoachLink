@@ -27,6 +27,7 @@ const athleteNavItems = [
   { to: '/athlete/sessions',     icon: Calendar,        label: 'My Sessions' },
   { to: '/chat',                 icon: MessageCircle,   label: 'Messages' },
   { to: '/requests',             icon: FileText,        label: 'My Requests' },
+  { to: '/favorites',            icon: Star,            label: 'Favourites' },
   { to: '/athlete/notifications',icon: Bell,            label: 'Notifications' },
   { to: '/athlete/profile',      icon: User,            label: 'My Profile' },
 ];

@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, Settings, Bell, Menu, Moon, Sun } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import Logo from './Logo';
+import { notificationService } from '../api/dataService';
+import { setNotificationCount } from '../redux/store';
 
 /**
  * DashboardTopbar
@@ -12,8 +14,27 @@ import Logo from './Logo';
  */
 const DashboardTopbar = ({ onToggleSidebar }) => {
   const { theme, toggleTheme } = useTheme();
+  const dispatch = useDispatch();
   const notificationCount = useSelector((s) => s.ui.notificationCount);
   const role = useSelector((s) => s.auth.role);
+
+  useEffect(() => {
+    if (!role) return;
+    const fetchCount = async () => {
+      try {
+        const res = await notificationService.getUnreadCount();
+        if (res && typeof res.count === 'number') {
+          dispatch(setNotificationCount(res.count));
+        }
+      } catch (err) {
+        console.error("Failed to fetch notification count", err);
+      }
+    };
+
+    fetchCount();
+    const interval = setInterval(fetchCount, 30000);
+    return () => clearInterval(interval);
+  }, [dispatch, role]);
 
   const isAthlete        = role === 'athlete';
   const notificationsPath = isAthlete ? '/athlete/notifications' : '/notifications';

@@ -10,7 +10,7 @@ const notificationSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ["request", "request_accepted", "request_declined", "session", "order", "review", "system"],
+      enum: ["request", "request_accepted", "request_declined", "session", "order", "review", "system", "message"],
       required: true,
     },
     title: {
@@ -32,7 +32,7 @@ const notificationSchema = new mongoose.Schema(
     },
     relatedModel: {
       type: String,
-      enum: ["CoachingRequest", "Session", "Order", "User"],
+      enum: ["CoachingRequest", "Session", "Order", "User", "Conversation"],
     },
   },
   { timestamps: true }

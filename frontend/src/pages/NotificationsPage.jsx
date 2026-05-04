@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Bell, Check, CheckCheck, ShoppingBag, Calendar, UserPlus, UserCheck, UserX, Star, Trash2 } from 'lucide-react';
+import { Bell, Check, CheckCheck, ShoppingBag, Calendar, UserPlus, UserCheck, UserX, Star, Trash2, MessageCircle } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 import { useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { setNotificationCount } from '../redux/store';
 import { notificationService } from '../api/dataService';
 
@@ -14,6 +15,7 @@ const notificationTypes = {
   order:            { icon: ShoppingBag, color: 'bg-primary-orange/10 text-primary-orange' },
   review:           { icon: Star,      color: 'bg-amber-100 dark:bg-amber-900/20 text-amber-500' },
   system:           { icon: Bell,      color: 'bg-slate-100 dark:bg-dark-border text-slate-500' },
+  message:          { icon: MessageCircle, color: 'bg-blue-100 dark:bg-blue-900/20 text-blue-500' },
 };
 
 const timeAgo = (dateStr) => {
@@ -35,6 +37,7 @@ const NotificationsPage = () => {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('All');
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchNotifications = async () => {
@@ -52,12 +55,13 @@ const NotificationsPage = () => {
     fetchNotifications();
   }, [dispatch]);
 
-  const filters = ['All', 'Unread', 'Requests', 'Sessions'];
+  const filters = ['All', 'Unread', 'Requests', 'Sessions', 'Messages'];
 
   const filtered = notifications.filter(n => {
     if (filter === 'Unread') return !n.read;
     if (filter === 'Requests') return n.type === 'request' || n.type === 'request_accepted' || n.type === 'request_declined';
     if (filter === 'Sessions') return n.type === 'session';
+    if (filter === 'Messages') return n.type === 'message';
     return true;
   });
 
@@ -154,11 +158,17 @@ const NotificationsPage = () => {
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 10 }}
-                className={`flex items-start gap-4 p-4 rounded-2xl border transition-all group ${
+                className={`flex items-start gap-4 p-4 rounded-2xl border transition-all group cursor-pointer ${
                   n.read
                     ? 'bg-white dark:bg-dark-card border-slate-100 dark:border-dark-border'
                     : 'bg-indigo-50/50 dark:bg-indigo-900/10 border-primary-blue/20'
                 }`}
+                onClick={() => {
+                  if (n.type === 'message' && n.relatedId) {
+                    markRead(n._id);
+                    navigate(`/chat/${n.relatedId}`);
+                  }
+                }}
               >
                 {/* Icon */}
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${config.color}`}>

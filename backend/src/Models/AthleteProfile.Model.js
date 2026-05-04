@@ -46,6 +46,10 @@ const athleteProfileSchema = new mongoose.Schema(
     goal: {
       type: String,
     },
+    favorites: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User"
+    }],
   },
   { timestamps: true }
 );
