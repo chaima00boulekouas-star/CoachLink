@@ -3,9 +3,9 @@ import { Link } from 'react-router-dom';
 import { Search, Settings, Bell, Menu, Moon, Sun } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useSelector, useDispatch } from 'react-redux';
-import Logo from './Logo';
-import { notificationService } from '../api/dataService';
 import { setNotificationCount } from '../redux/store';
+import { notificationService } from '../api/dataService';
+import Logo from './Logo';
 
 /**
  * DashboardTopbar

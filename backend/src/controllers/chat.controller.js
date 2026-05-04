@@ -113,10 +113,14 @@ export const sendMessage = async (req, res) => {
     }
 
     // Verify user is a participant
+<<<<<<< HEAD
     const isParticipant = conversation.participants.some(
       (p) => p.toString() === userId
     );
     if (!isParticipant) {
+=======
+    if (!conversation.participants.some(p => p.toString() === userId)) {
+>>>>>>> 06b6f4a (Implement real-time message notifications and fix chat alignment identity)
       return res.status(403).json({ message: "Not a participant in this conversation" });
     }
 
@@ -135,6 +139,7 @@ export const sendMessage = async (req, res) => {
 
     await conversation.save();
 
+<<<<<<< HEAD
     // Return the newly added message with sender populated
     const savedConv = await Conversation.findById(conversationId)
       .populate("messages.sender", "name avatar role");
@@ -153,8 +158,27 @@ export const sendMessage = async (req, res) => {
         relatedModel: 'Conversation'
       }).catch(err => console.error("Failed to create message notification:", err));
     }
+=======
+    // Return the newly added message with populated sender
+    const conversationWithSender = await Conversation.findById(conversationId)
+      .populate("messages.sender", "name avatar role email");
+    const newMessage = conversationWithSender.messages[conversationWithSender.messages.length - 1];
+>>>>>>> 06b6f4a (Implement real-time message notifications and fix chat alignment identity)
 
     res.status(201).json({ message: newMessage });
+
+    // Create a notification for the recipient
+    const recipientId = conversation.participants.find(p => p.toString() !== userId);
+    if (recipientId) {
+      await createNotification({
+        recipient: recipientId,
+        sender: userId,
+        type: 'message',
+        title: 'New Message',
+        message: `${req.user.name} sent you a message: "${text.length > 30 ? text.substring(0, 30) + '...' : text}"`,
+        link: `/chat/${conversationId}`
+      });
+    }
   } catch (error) {
     console.error("sendMessage error:", error);
     res.status(500).json({ message: "Failed to send message", error: error.message });
@@ -170,7 +194,7 @@ export const getMessages = async (req, res) => {
     const userId = req.user._id.toString();
 
     const conversation = await Conversation.findById(conversationId)
-      .populate("messages.sender", "name avatar role");
+      .populate("messages.sender", "name avatar role email");
 
     if (!conversation) {
       return res.status(404).json({ message: "Conversation not found" });

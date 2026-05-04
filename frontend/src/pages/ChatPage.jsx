@@ -73,14 +73,16 @@ const ChatPage = () => {
   }, []);
 
   // Get the current user ID consistently
-  const myId = currentUser?._id || currentUser?.id;
+  const myId = (currentUser?._id || currentUser?.id || '').toString();
 
   // Cleanup duplicates on first load
   useEffect(() => {
     if (cleanedUp) return;
     const cleanup = async () => {
       try {
-        await chatService.cleanupDuplicates();
+        if (chatService.cleanupDuplicates) {
+          await chatService.cleanupDuplicates();
+        }
         setCleanedUp(true);
       } catch {
         setCleanedUp(true);
@@ -176,7 +178,7 @@ const ChatPage = () => {
     // Optimistic update — show the message immediately
     const tempMsg = {
       _id: `temp-${Date.now()}`,
-      sender: { _id: myId, name: currentUser?.name },
+      sender: { _id: myId, name: currentUser?.name, email: currentUser?.email },
       text,
       createdAt: new Date().toISOString(),
       read: false,
@@ -211,8 +213,8 @@ const ChatPage = () => {
   };
 
   const getOtherParticipant = (conv) => {
-    if (!conv?.participants || !myId) return null;
-    return conv.participants.find(p => (p._id || p) !== myId) || conv.participants[0];
+    if (!conv?.participants || !currentUser) return null;
+    return conv.participants.find(p => (p._id || p || '').toString() !== myId) || conv.participants[0];
   };
 
   const activeConv = conversations.find(c => c._id === conversationId);
@@ -386,8 +388,9 @@ const ChatPage = () => {
                           );
                         }
 
-                        const senderId = item.sender?._id || item.sender;
-                        const isMe = senderId?.toString() === myId?.toString();
+                        const senderId = (item.sender?._id || item.sender || '').toString();
+                        // Triple-check: Match by ID OR by Email
+                        const isMe = senderId === myId || (item.sender?.email && item.sender.email === currentUser?.email);
 
                         return (
                           <div key={item._id || i} className={`flex ${isMe ? 'justify-end' : 'justify-start'} mb-1`}>
@@ -406,7 +409,7 @@ const ChatPage = () => {
                                   ? 'bg-primary-blue text-white rounded-2xl rounded-br-md shadow-sm shadow-blue-500/10'
                                   : 'bg-white dark:bg-dark-card text-slate-900 dark:text-white border border-slate-100 dark:border-dark-border rounded-2xl rounded-bl-md shadow-sm'
                               } ${item._temp ? 'opacity-70' : ''}`}>
-                                <p>{item.text}</p>
+                                <p className="break-words">{item.text}</p>
                               </div>
                               <div className={`flex items-center gap-1 mt-0.5 px-1 ${isMe ? 'justify-end' : 'justify-start'}`}>
                                 <span className="text-[9px] text-slate-400">

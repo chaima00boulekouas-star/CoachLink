@@ -34,24 +34,26 @@ const timeAgo = (dateStr) => {
 
 const NotificationsPage = () => {
   const [notifications, setNotifications] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState('All');
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
+  const fetchNotifications = async () => {
+    try {
+      const res = await notificationService.getAll();
+      const notifs = res.notifications || res || [];
+      setNotifications(notifs);
+      const unread = notifs.filter(n => !n.read).length;
+      dispatch(setNotificationCount(unread));
+    } catch (err) {
+      console.error('Failed to fetch notifications:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchNotifications = async () => {
-      try {
-        const res = await notificationService.getAll();
-        setNotifications(res.notifications || []);
-        const unread = (res.notifications || []).filter(n => !n.read).length;
-        dispatch(setNotificationCount(unread));
-      } catch (err) {
-        console.error('Failed to fetch notifications:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchNotifications();
   }, [dispatch]);
 
@@ -75,18 +77,26 @@ const NotificationsPage = () => {
     }
   };
 
-  const markRead = async (id) => {
-    try {
-      await notificationService.markRead(id);
-      setNotifications(prev => prev.map(n => n._id === id ? { ...n, read: true } : n));
-      const unread = notifications.filter(n => !n.read && n._id !== id).length;
-      dispatch(setNotificationCount(unread));
-    } catch (err) {
-      console.error('Failed to mark read:', err);
+  const handleNotificationClick = async (notification) => {
+    if (!notification.read) {
+      try {
+        await notificationService.markRead(notification._id);
+        setNotifications(prev => prev.map(n => n._id === notification._id ? { ...n, read: true } : n));
+        const unread = notifications.filter(n => !n.read && n._id !== notification._id).length;
+        dispatch(setNotificationCount(unread));
+      } catch (err) {
+        console.error('Failed to mark read:', err);
+      }
+    }
+    
+    if (notification.link) {
+      navigate(notification.link);
+    } else if (notification.relatedId && notification.type === 'message') {
+      navigate(`/chat/${notification.relatedId}`);
     }
   };
 
-  const deleteNotif = async (id) => {
+  const deleteNotification = async (id) => {
     try {
       await notificationService.delete(id);
       setNotifications(prev => prev.filter(n => n._id !== id));
@@ -100,120 +110,111 @@ const NotificationsPage = () => {
   return (
     <DashboardLayout>
       <div className="max-w-2xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-black text-slate-900 dark:text-white">Notifications</h1>
-            {unreadCount > 0 && (
-              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                You have <span className="font-bold text-primary-blue">{unreadCount}</span> unread notifications
-              </p>
-            )}
+        {isLoading ? (
+          <div className="flex justify-center py-20">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-blue"></div>
           </div>
-          {unreadCount > 0 && (
-            <button
-              onClick={markAllRead}
-              className="flex items-center gap-1.5 text-sm font-bold text-primary-blue hover:bg-indigo-50 dark:hover:bg-indigo-900/10 px-3 py-2 rounded-xl transition-colors"
-            >
-              <CheckCheck size={16} /> Mark all read
-            </button>
-          )}
-        </div>
-
-        {/* Filter tabs */}
-        <div className="flex gap-2 mb-6 overflow-x-auto pb-1">
-          {filters.map(f => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`text-xs font-bold px-4 py-2 rounded-xl whitespace-nowrap transition-all ${
-                filter === f
-                  ? 'bg-primary-blue text-white shadow-lg shadow-blue-500/20'
-                  : 'bg-white dark:bg-dark-card text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-dark-border hover:border-primary-blue'
-              }`}
-            >
-              {f}
-            </button>
-          ))}
-        </div>
-
-        {/* Notification list */}
-        <div className="space-y-3">
-          {loading ? (
-            <div className="flex items-center justify-center py-16">
-              <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-            </div>
-          ) : filtered.length === 0 ? (
-            <div className="text-center py-16 text-slate-400 dark:text-slate-500">
-              <Bell size={48} className="mx-auto mb-3 opacity-30" />
-              <p className="font-semibold">{filter === 'Unread' ? 'No unread notifications' : 'No notifications yet'}</p>
-            </div>
-          ) : filtered.map(n => {
-            const config = notificationTypes[n.type] || notificationTypes.system;
-            const Icon = config.icon;
-            return (
-              <motion.div
-                key={n._id}
-                layout
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 10 }}
-                className={`flex items-start gap-4 p-4 rounded-2xl border transition-all group cursor-pointer ${
-                  n.read
-                    ? 'bg-white dark:bg-dark-card border-slate-100 dark:border-dark-border'
-                    : 'bg-indigo-50/50 dark:bg-indigo-900/10 border-primary-blue/20'
-                }`}
-                onClick={() => {
-                  if (n.type === 'message' && n.relatedId) {
-                    markRead(n._id);
-                    navigate(`/chat/${n.relatedId}`);
-                  }
-                }}
-              >
-                {/* Icon */}
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${config.color}`}>
-                  <Icon size={18} />
-                </div>
-
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2">
-                    <p className={`text-sm font-bold ${n.read ? 'text-slate-700 dark:text-slate-300' : 'text-slate-900 dark:text-white'}`}>
-                      {n.title}
-                    </p>
-                    <span className="text-[10px] text-slate-400 whitespace-nowrap mt-0.5">{timeAgo(n.createdAt)}</span>
-                  </div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">{n.message}</p>
-                </div>
-
-                {/* Actions */}
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                  {!n.read && (
-                    <button
-                      onClick={() => markRead(n._id)}
-                      title="Mark as read"
-                      className="w-7 h-7 rounded-lg bg-green-100 dark:bg-green-900/20 text-green-600 flex items-center justify-center hover:bg-green-200 transition-colors"
-                    >
-                      <Check size={13} />
-                    </button>
-                  )}
-                  <button
-                    onClick={() => deleteNotif(n._id)}
-                    title="Delete"
-                    className="w-7 h-7 rounded-lg bg-red-50 dark:bg-red-900/10 text-red-400 flex items-center justify-center hover:bg-red-100 transition-colors"
-                  >
-                    <Trash2 size={13} />
-                  </button>
-                </div>
-
-                {/* Unread dot */}
-                {!n.read && (
-                  <div className="w-2 h-2 bg-primary-blue rounded-full flex-shrink-0 mt-1" />
+        ) : (
+          <>
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h1 className="text-3xl font-black text-slate-900 dark:text-white">Notifications</h1>
+                {unreadCount > 0 && (
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                    You have <span className="font-bold text-primary-blue">{unreadCount}</span> unread notifications
+                  </p>
                 )}
-              </motion.div>
-            );
-          })}
-        </div>
+              </div>
+              {unreadCount > 0 && (
+                <button
+                  onClick={markAllRead}
+                  className="flex items-center gap-1.5 text-sm font-bold text-primary-blue hover:bg-indigo-50 dark:hover:bg-indigo-900/10 px-3 py-2 rounded-xl transition-colors"
+                >
+                  <CheckCheck size={16} /> Mark all read
+                </button>
+              )}
+            </div>
+
+            {/* Filter tabs */}
+            <div className="flex gap-2 mb-6 overflow-x-auto pb-1">
+              {filters.map(f => (
+                <button
+                  key={f}
+                  onClick={() => setFilter(f)}
+                  className={`text-xs font-bold px-4 py-2 rounded-xl whitespace-nowrap transition-all ${
+                    filter === f
+                      ? 'bg-primary-blue text-white shadow-lg shadow-blue-500/20'
+                      : 'bg-white dark:bg-dark-card text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-dark-border hover:border-primary-blue'
+                  }`}
+                >
+                  {f}
+                </button>
+              ))}
+            </div>
+
+            {/* Notification list */}
+            <div className="space-y-3">
+              {filtered.length === 0 ? (
+                <div className="text-center py-16 text-slate-400 dark:text-slate-500">
+                  <Bell size={48} className="mx-auto mb-3 opacity-30" />
+                  <p className="font-semibold">{filter === 'Unread' ? 'No unread notifications' : 'No notifications yet'}</p>
+                </div>
+              ) : (
+                filtered.map(n => {
+                  const config = notificationTypes[n.type] || notificationTypes.system;
+                  const Icon = config.icon;
+                  return (
+                    <motion.div
+                      key={n._id}
+                      layout
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 10 }}
+                      onClick={() => handleNotificationClick(n)}
+                      className={`flex items-start gap-4 p-4 rounded-2xl border transition-all group cursor-pointer ${
+                        n.read
+                          ? 'bg-white dark:bg-dark-card border-slate-100 dark:border-dark-border'
+                          : 'bg-indigo-50/50 dark:bg-indigo-900/10 border-primary-blue/20'
+                      }`}
+                    >
+                      {/* Icon */}
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${config.color}`}>
+                        <Icon size={18} />
+                      </div>
+
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className={`text-sm font-bold ${n.read ? 'text-slate-700 dark:text-slate-300' : 'text-slate-900 dark:text-white'}`}>
+                            {n.title}
+                          </p>
+                          <span className="text-[10px] text-slate-400 whitespace-nowrap mt-0.5">{timeAgo(n.createdAt)}</span>
+                        </div>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">{n.message}</p>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); deleteNotification(n._id); }}
+                          title="Delete"
+                          className="w-7 h-7 rounded-lg bg-red-50 dark:bg-red-900/10 text-red-400 flex items-center justify-center hover:bg-red-100 transition-colors"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+
+                      {/* Unread dot */}
+                      {!n.read && (
+                        <div className="w-2 h-2 bg-primary-blue rounded-full flex-shrink-0 mt-1" />
+                      )}
+                    </motion.div>
+                  );
+                })
+              )}
+            </div>
+          </>
+        )}
       </div>
     </DashboardLayout>
   );

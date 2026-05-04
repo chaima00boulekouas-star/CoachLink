@@ -10,7 +10,10 @@ import paymentRoutes from "./PaymentRoutes.js";
 import dashboardRoutes from "./DashboardRoutes.js";
 import userRoutes from "./UserRoutes.js";
 import chatRoutes from "./ChatRoutes.js";
+<<<<<<< HEAD
 import requestRoutes from "./RequestRoutes.js";
+=======
+>>>>>>> 06b6f4a (Implement real-time message notifications and fix chat alignment identity)
 import notificationRoutes from "./NotificationRoutes.js";
 
 const router = express.Router();
@@ -27,7 +30,10 @@ router.use("/api/payments", paymentRoutes);
 router.use("/api/dashboard", dashboardRoutes);
 router.use("/api/users", userRoutes);
 router.use("/api/chat", chatRoutes);
+<<<<<<< HEAD
 router.use("/api/requests", requestRoutes);
+=======
+>>>>>>> 06b6f4a (Implement real-time message notifications and fix chat alignment identity)
 router.use("/api/notifications", notificationRoutes);
 
 export default router;
