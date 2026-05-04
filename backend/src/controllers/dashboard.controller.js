@@ -2,6 +2,8 @@ import Order from "../Models/Order.Model.js";
 import Product from "../Models/Product.Model.js";
 import Session from "../Models/Session.Model.js";
 import TrainerProfile from "../Models/TrainerProfile.Model.js";
+import CoachingRequest from "../Models/CoachingRequest.Model.js";
+import AthleteProfile from "../Models/AthleteProfile.Model.js";
 
 // @desc    Get coach dashboard statistics and overview
 // @route   GET /api/dashboard/coach
@@ -75,7 +77,41 @@ export const getCoachDashboardStats = async (req, res) => {
     const ratingAvg = profile ? profile.ratingAvg : 0;
     const ratingCount = profile ? profile.ratingCount : 0;
 
-    // 7. Send the compiled dashboard data to the frontend
+    // 7. Get Pending Athlete Requests
+    const pendingRequests = await CoachingRequest.find({
+      trainer: trainerId,
+      status: "pending",
+      sentBy: "athlete"
+    })
+      .populate("athlete", "name avatar")
+      .sort({ createdAt: -1 });
+
+    // For each request, get the athlete's profile details (sport, level, goal)
+    const athleteRequests = await Promise.all(pendingRequests.map(async (req) => {
+      const profile = await AthleteProfile.findOne({ user: req.athlete._id });
+      
+      // Calculate initials
+      const initials = req.athlete.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+      
+      // Determine a color based on name
+      const colors = ['bg-blue-500', 'bg-purple-500', 'bg-green-500', 'bg-orange-500', 'bg-pink-500', 'bg-indigo-500'];
+      const color = colors[req.athlete.name.charCodeAt(0) % colors.length];
+
+      return {
+        id: req._id,
+        name: req.athlete.name,
+        avatar: req.athlete.avatar,
+        initials,
+        color,
+        sport: profile?.sports?.[0] || "General",
+        level: profile?.level || "Beginner",
+        goal: profile?.goal || profile?.fitness_goals?.[0] || "Fitness",
+        message: req.message,
+        createdAt: req.createdAt
+      };
+    }));
+
+    // 8. Send the compiled dashboard data to the frontend
     res.status(200).json({
       stats: {
         totalEarnings,
@@ -86,11 +122,72 @@ export const getCoachDashboardStats = async (req, res) => {
         ratingCount
       },
       recentOrders,
-      upcomingSessions: upcomingSessionsList
+      upcomingSessions: upcomingSessionsList,
+      athleteRequests
     });
 
   } catch (error) {
     console.error("Get Coach Dashboard Stats Error:", error);
+    res.status(500).json({ message: "Failed to fetch dashboard statistics", error: error.message });
+  }
+};
+
+// @desc    Get athlete dashboard statistics and overview
+// @route   GET /api/dashboard/athlete
+// @access  Private (Logged in Athlete)
+export const getAthleteDashboardStats = async (req, res) => {
+  try {
+    const athleteId = req.user.id;
+
+    // 1. Get training sessions stats
+    const totalSessions = await Session.countDocuments({ athlete: athleteId });
+    const upcomingSessions = await Session.countDocuments({ 
+      athlete: athleteId, 
+      status: "scheduled",
+      date: { $gte: new Date() }
+    });
+    const completedSessions = await Session.countDocuments({ 
+      athlete: athleteId, 
+      status: "completed" 
+    });
+
+    // 2. Get recent sessions (last 5)
+    const recentSessions = await Session.find({ athlete: athleteId })
+      .populate("trainer", "name avatar")
+      .sort({ date: -1 })
+      .limit(5);
+
+    // 3. Get active trainers count (accepted coaching requests)
+    const activeTrainers = await CoachingRequest.countDocuments({
+      athlete: athleteId,
+      status: "accepted"
+    });
+
+    // 4. Get athlete profile for details
+    const profile = await AthleteProfile.findOne({ user: athleteId });
+
+    // 5. Calculate "Performance Score" (Mock logic based on sessions for now)
+    const performanceScore = Math.min(100, (completedSessions * 5) + 50);
+
+    res.status(200).json({
+      stats: {
+        totalSessions,
+        upcomingSessions,
+        completedSessions,
+        activeTrainers,
+        performanceScore,
+      },
+      recentSessions,
+      profile: {
+        sport: profile?.sports?.[0] || "General",
+        level: profile?.level || "Beginner",
+        goal: profile?.goal || profile?.fitness_goals?.[0] || "Fitness",
+        location: profile?.location || "Not set",
+        age: profile?.age || "—"
+      }
+    });
+  } catch (error) {
+    console.error("Get Athlete Dashboard Stats Error:", error);
     res.status(500).json({ message: "Failed to fetch dashboard statistics", error: error.message });
   }
 };

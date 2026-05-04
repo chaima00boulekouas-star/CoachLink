@@ -7,6 +7,7 @@ import {
   getUsers,
   getUserById,
   updateUser,
+  updateMe,
   deleteUser,
   verifyEmail,
   sendOtp,
@@ -33,6 +34,7 @@ router.post('/verify-otp', verifyOtp);         // verify OTP code
 
 // ── Protected ─────────────────────────────────────────────────────────────
 router.get('/me', protect, getMe);             // get current user
+router.put('/me', protect, updateMe);             // update current user
 router.put('/avatar', protect, upload.single('avatar'), updateAvatar); // update avatar
 router.put('/change-password', protect, changePassword); // change password
 router.get('/athletes', protect, getAthletes); // get all athletes (for trainers)

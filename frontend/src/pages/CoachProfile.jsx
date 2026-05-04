@@ -3,7 +3,8 @@ import { useParams, Link } from 'react-router-dom';
 import { Star, Check, ShoppingBag, Send, X, MapPin, Award, AlertCircle } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 import { useSelector } from 'react-redux';
-import { productService, trainerService, requestService } from '../api/dataService';
+import { productService, trainerService, requestService, reviewService } from '../api/dataService';
+import { toast } from 'react-hot-toast';
 import { getImageUrl, FALLBACK_PRODUCT_IMAGE } from '../utils/imageUrl';
 
 const TAG_COLORS = { 'Best Seller': 'bg-amber-500', 'New': 'bg-green-500', 'Sale': 'bg-red-500', 'Popular': 'bg-indigo-600' };
@@ -22,24 +23,31 @@ const CoachProfile = () => {
   const [sending, setSending]       = useState(false);
   const [requestError, setRequestError] = useState('');
   const [existingRequestId, setExistingRequestId] = useState(null);
+  const [reviews, setReviews]       = useState([]);
+  const [newRating, setNewRating]   = useState(5);
+  const [newComment, setNewComment] = useState('');
+  const [reviewing, setReviewing]   = useState(false);
+  const [loadingReviews, setLoadingReviews] = useState(true);
 
   useEffect(() => {
     const fetchCoachData = async () => {
       setLoading(true);
       try {
-        const [profileRes, productsRes] = await Promise.all([
+        const [profileRes, productsRes, reviewsRes] = await Promise.all([
           trainerService.getById(id),
-          productService.getAll({ trainerId: id })
+          productService.getAll({ trainerId: id }),
+          reviewService.getCoachReviews(id)
         ]);
         
         const p = profileRes.profile;
         setCoach({
+          _id: p.user?._id,
           name: p.user?.name || 'Coach',
           sport: p.sports?.[0] || p.specialization || 'Fitness',
           sports: p.sports || [],
           bio: p.philosophy || 'Professional trainer dedicated to your success.',
           image: getImageUrl(p.user?.avatar, 'https://images.unsplash.com/photo-1574680096145-d05b474e2155?auto=format&fit=crop&q=80&w=600'),
-          rating: p.ratingAvg || 5.0,
+          rating: p.ratingAvg || 0,
           reviews: p.ratingCount || 0,
           location: p.location || 'Online',
           experience: p.experience || 'N/A',
@@ -48,10 +56,12 @@ const CoachProfile = () => {
         });
         
         setProducts(productsRes.products || []);
+        setReviews(reviewsRes || []);
       } catch (error) {
         console.error('Failed to fetch coach profile:', error);
       } finally {
         setLoading(false);
+        setLoadingReviews(false);
       }
     };
     fetchCoachData();
@@ -103,6 +113,31 @@ const CoachProfile = () => {
       setExistingRequestId(null);
     } catch (err) {
       console.error('Failed to cancel request:', err);
+    }
+  };
+
+  const handleReviewSubmit = async (e) => {
+    e.preventDefault();
+    if (newRating < 1 || newRating > 5) return;
+    setReviewing(true);
+    try {
+      const res = await reviewService.create(id, { rating: newRating, comment: newComment });
+      toast.success('Review added!');
+      setReviews(prev => [res.review, ...prev]);
+      setNewComment('');
+      setNewRating(5);
+      // Refresh coach rating
+      const updatedProfile = await trainerService.getById(id);
+      const p = updatedProfile.profile;
+      setCoach(prev => ({
+        ...prev,
+        rating: p.ratingAvg,
+        reviews: p.ratingCount
+      }));
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to add review');
+    } finally {
+      setReviewing(false);
     }
   };
 
@@ -293,6 +328,104 @@ const CoachProfile = () => {
           </div>
         )}
 
+        {/* Reviews Section */}
+        <div className="pt-10">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h2 className="text-3xl font-black text-slate-900 dark:text-white">What Clients Say</h2>
+              <p className="text-slate-500 dark:text-slate-400 text-sm mt-1.5">Real results from real athletes who trained with {coach.name}</p>
+            </div>
+            <div className="flex items-center gap-2 bg-indigo-50 dark:bg-indigo-900/20 px-4 py-2 rounded-xl">
+              <Star size={18} className="fill-amber-400 text-amber-400" />
+              <span className="text-xl font-black text-slate-900 dark:text-white">{coach.rating.toFixed(1)}</span>
+              <span className="text-slate-400 text-sm">({coach.reviews} reviews)</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_350px] gap-10">
+            {/* Reviews List */}
+            <div className="space-y-6">
+              {loadingReviews ? (
+                <div className="flex items-center justify-center py-10">
+                  <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : reviews.length === 0 ? (
+                <div className="bg-slate-50 dark:bg-slate-800/50 rounded-3xl p-10 text-center border-2 border-dashed border-slate-200 dark:border-slate-700">
+                  <p className="text-slate-500 dark:text-slate-400 font-semibold">No reviews yet. Be the first to review!</p>
+                </div>
+              ) : (
+                reviews.map((rev) => (
+                  <div key={rev._id} className="bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-100 dark:border-slate-700 shadow-sm relative">
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-700 overflow-hidden flex-shrink-0">
+                        <img 
+                          src={getImageUrl(rev.athlete?.avatar, `https://ui-avatars.com/api/?name=${encodeURIComponent(rev.athlete?.name || 'A')}&background=random`)} 
+                          alt={rev.athlete?.name} 
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-1">
+                          <h4 className="font-bold text-slate-900 dark:text-white">{rev.athlete?.name}</h4>
+                          <span className="text-[10px] font-bold text-slate-400">{new Date(rev.createdAt).toLocaleDateString()}</span>
+                        </div>
+                        <div className="flex gap-0.5 mb-3">
+                          {[...Array(5)].map((_, i) => (
+                            <Star key={i} size={12} className={i < rev.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-200 dark:text-slate-700'} />
+                          ))}
+                        </div>
+                        <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed italic">"{rev.comment}"</p>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Review Form */}
+            {user?.role === 'athlete' && (
+              <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700 p-6 shadow-sm sticky top-24 h-fit">
+                <h3 className="font-bold text-slate-900 dark:text-white mb-4">Leave a Review</h3>
+                <form onSubmit={handleReviewSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Your Rating</label>
+                    <div className="flex gap-2">
+                      {[1, 2, 3, 4, 5].map((num) => (
+                        <button
+                          key={num}
+                          type="button"
+                          onClick={() => setNewRating(num)}
+                          className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+                            newRating >= num ? 'bg-amber-100 text-amber-600' : 'bg-slate-50 dark:bg-slate-700 text-slate-400'
+                          }`}
+                        >
+                          <Star size={18} className={newRating >= num ? 'fill-current' : ''} />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Your Comment</label>
+                    <textarea
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      placeholder="Share your experience..."
+                      rows={4}
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-indigo-500 transition-all resize-none"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={reviewing || !newComment.trim()}
+                    className="w-full bg-indigo-600 text-white font-bold py-3 rounded-xl hover:opacity-90 transition-all shadow-lg shadow-indigo-500/20 disabled:opacity-40"
+                  >
+                    {reviewing ? 'Posting...' : 'Post Review'}
+                  </button>
+                </form>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </DashboardLayout>
   );

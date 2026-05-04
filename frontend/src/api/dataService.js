@@ -90,7 +90,7 @@ export const athleteService = {
 
   // Get athlete dashboard data
   getDashboard: async () => {
-    const res = await api.get('/api/athletes/dashboard');
+    const res = await api.get('/api/dashboard/athlete');
     return res.data;
   },
 };
@@ -105,6 +105,10 @@ export const requestService = {
   },
 
   // Get incoming requests (for trainer)
+  getAll: async () => {
+    const res = await api.get(`/api/requests`);
+    return res.data;
+  },
   getIncoming: async () => {
     const res = await api.get('/api/requests/incoming');
     return res.data;
@@ -330,25 +334,25 @@ export const favoriteService = {
 export const settingsService = {
   // Get user settings
   get: async () => {
-    const res = await api.get('/api/settings');
+    const res = await api.get('/api/users/me');
     return res.data;
   },
 
   // Update settings
   update: async (data) => {
-    const res = await api.put('/api/settings', data);
+    const res = await api.put('/api/users/me', data);
     return res.data;
   },
 
   // Change password
   changePassword: async (currentPassword, newPassword) => {
-    const res = await api.put('/api/settings/password', { currentPassword, newPassword });
+    const res = await api.put('/api/users/change-password', { currentPassword, newPassword });
     return res.data;
   },
 
   // Update avatar
   updateAvatar: async (formData) => {
-    const res = await api.put('/api/settings/avatar', formData, {
+    const res = await api.put('/api/users/avatar', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
     return res.data;
@@ -413,6 +417,22 @@ export const chatService = {
   // Cleanup duplicate conversations
   cleanupDuplicates: async () => {
     const res = await api.delete('/api/chat/cleanup-duplicates');
+    return res.data;
+  },
+};
+
+// ── Review API Service ────────────────────────────────────────────────────
+
+export const reviewService = {
+  // Create a review for a coach
+  create: async (coachId, data) => {
+    const res = await api.post(`/api/reviews/coach/${coachId}`, data);
+    return res.data;
+  },
+
+  // Get all reviews for a coach
+  getCoachReviews: async (coachId) => {
+    const res = await api.get(`/api/reviews/coach/${coachId}`);
     return res.data;
   },
 };

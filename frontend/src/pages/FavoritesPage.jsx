@@ -103,9 +103,9 @@ const FavoritesPage = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <AnimatePresence>
-              {favorites.map((athlete, index) => (
+              {favorites.map((item, index) => (
                 <motion.div
-                  key={athlete._id}
+                  key={item._id}
                   layout
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
@@ -116,24 +116,24 @@ const FavoritesPage = () => {
                   <div className="relative h-28 overflow-hidden bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500">
                     {/* Remove from favourites */}
                     <button
-                      onClick={() => removeFavorite(athlete._id)}
+                      onClick={() => removeFavorite(item._id)}
                       className="absolute top-3 right-3 w-8 h-8 bg-white dark:bg-dark-bg rounded-full flex items-center justify-center text-red-400 hover:text-red-500 hover:scale-110 transition-all shadow-md z-10"
                       title="Remove from favourites"
                     >
                       <Heart size={15} className="fill-current" />
                     </button>
-
+ 
                     {/* Avatar + name on gradient */}
                     <div className="absolute bottom-3 left-3 flex items-center gap-3">
-                      {athlete.avatar ? (
+                      {item.avatar ? (
                         <img
-                          src={athlete.avatar.startsWith('http') ? athlete.avatar : `http://localhost:5000/${athlete.avatar}`}
-                          alt={athlete.name}
+                          src={item.avatar.startsWith('http') ? item.avatar : `http://localhost:5000/${item.avatar}`}
+                          alt={item.name}
                           className="w-10 h-10 rounded-full border-2 border-white object-cover flex-shrink-0"
                         />
                       ) : (
                         <div className={`${getColor(index)} w-10 h-10 rounded-full border-2 border-white flex items-center justify-center text-white font-bold text-sm flex-shrink-0`}>
-                          {getInitials(athlete.name)}
+                          {getInitials(item.name)}
                         </div>
                       )}
                       <div>

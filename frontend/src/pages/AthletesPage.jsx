@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, MessageCircle, Trophy, Heart, Loader2, MapPin, Target } from 'lucide-react';
+import { Search, MessageCircle, Trophy, Heart, Loader2, MapPin, Target, UserPlus } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 import { Link, useNavigate } from 'react-router-dom';
-import { favoritesService, chatService } from '../api/dataService';
+import { favoritesService, chatService, requestService } from '../api/dataService';
+import { toast } from 'react-hot-toast';
 import api from '../api/axios';
 
 const COLORS = ['bg-blue-500', 'bg-pink-500', 'bg-green-500', 'bg-orange-500', 'bg-purple-500', 'bg-indigo-500', 'bg-teal-500'];
@@ -50,6 +51,21 @@ const AthletesPage = () => {
       navigate(`/chat/${data.conversation._id}`);
     } catch (err) {
       console.error('Failed to start chat:', err);
+    }
+  };
+
+  const handleInvite = async (athleteId) => {
+    try {
+      await requestService.send(athleteId, { message: "I would like to be your trainer!" });
+      toast.success('Invitation sent!');
+      // Update local state to show pending
+      setAthletes(prev => prev.map(a => 
+        a._id === athleteId 
+          ? { ...a, connectionStatus: 'pending', requestSentBy: 'trainer' } 
+          : a
+      ));
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to send invitation');
     }
   };
 
@@ -208,11 +224,28 @@ const AthletesPage = () => {
                       >
                         <MessageCircle size={13} /> Message
                       </button>
-                      <Link to="/sessions" className="flex-1">
-                        <button className="w-full flex items-center justify-center gap-1.5 text-xs font-bold bg-primary-blue text-white rounded-xl py-2 hover:opacity-90 transition-opacity">
-                          <Trophy size={13} /> View Sessions
+                      
+                      {a.connectionStatus === 'accepted' ? (
+                        <Link to="/sessions" className="flex-1">
+                          <button className="w-full flex items-center justify-center gap-1.5 text-xs font-bold bg-green-500 text-white rounded-xl py-2 hover:opacity-90 transition-opacity">
+                            <Trophy size={13} /> View Sessions
+                          </button>
+                        </Link>
+                      ) : a.connectionStatus === 'pending' ? (
+                        <button 
+                          disabled
+                          className="flex-1 flex items-center justify-center gap-1.5 text-xs font-bold bg-slate-100 dark:bg-white/5 text-slate-400 rounded-xl py-2 cursor-not-allowed"
+                        >
+                          <Loader2 size={13} className="animate-spin" /> Pending
                         </button>
-                      </Link>
+                      ) : (
+                        <button 
+                          onClick={() => handleInvite(a._id)}
+                          className="flex-1 flex items-center justify-center gap-1.5 text-xs font-bold bg-primary-blue text-white rounded-xl py-2 hover:opacity-90 transition-opacity"
+                        >
+                          <UserPlus size={13} /> Invite
+                        </button>
+                      )}
                     </div>
                   </motion.div>
                 );

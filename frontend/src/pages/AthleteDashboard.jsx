@@ -1,46 +1,27 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Search, Target, Play, History, TrendingUp,
-  Edit2, CheckCircle2, Calendar, MapPin
+  Edit2, CheckCircle2, Calendar, MapPin, Loader2
 } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 import { useSelector } from 'react-redux';
+import { athleteService } from '../api/dataService';
+import { getImageUrl } from '../utils/imageUrl';
 
-const RECENT_SESSIONS = [
-  {
-    id: 1,
-    trainer: 'Marcus Johnson',
-    sport: 'Tennis',
-    duration: '6 months',
-    result: 'Improved shooting percentage from 42% to 58%',
-    year: '2024',
-  },
-  {
-    id: 2,
-    trainer: 'Coach Mike Davis',
-    sport: 'Tennis',
-    duration: '1 year',
-    result: 'Enhanced defensive positioning and footwork',
-    year: '2023',
-  },
-];
-
-const CHART_POINTS = [80, 75, 85, 60, 65, 55, 40, 45, 30, 20, 25];
-
-const PerformanceChart = () => (
+const PerformanceChart = ({ points = [80, 75, 85, 60, 65, 55, 40, 45, 30, 20, 25] }) => (
   <div className="relative h-32 w-full">
     <div className="absolute inset-0 bg-gradient-to-t from-orange-500/10 to-transparent rounded-lg" />
     <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 100 100">
       <path
-        d="M0,80 L10,75 L20,85 L30,60 L40,65 L50,55 L60,40 L70,45 L80,30 L90,20 L100,25"
+        d={`M0,${points[0]} ${points.map((p, i) => `L${i * 10},${p}`).join(' ')}`}
         fill="none"
         stroke="#FF5B22"
         strokeWidth="2"
         vectorEffect="non-scaling-stroke"
       />
     </svg>
-    {CHART_POINTS.map((val, i) => (
+    {points.map((val, i) => (
       <div
         key={i}
         style={{ left: `${i * 10}%`, top: `${val}%` }}
@@ -52,11 +33,37 @@ const PerformanceChart = () => (
 
 const AthleteDashboard = () => {
   const user = useSelector((s) => s.auth.user);
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await athleteService.getDashboard();
+        setData(res);
+      } catch (err) {
+        console.error('Failed to fetch dashboard data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
   const name     = user?.name     || 'Athlete';
-  const location = user?.location || '';
-  const sport    = Array.isArray(user?.sports) ? user.sports[0] : (user?.sport || '');
-  const level    = user?.level    || '';
-  const age      = user?.age      || '';
+  const stats    = data?.stats    || { totalSessions: 0, upcomingSessions: 0, completedSessions: 0, activeTrainers: 0, performanceScore: 0 };
+  const profile  = data?.profile  || { sport: '—', level: '—', goal: '—', location: '—', age: '—' };
+  const sessions = data?.recentSessions || [];
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 size={32} className="animate-spin text-indigo-600" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
   <DashboardLayout>
@@ -68,10 +75,10 @@ const AthleteDashboard = () => {
         <p className="text-slate-500 dark:text-slate-400 mt-1">Track your progress and achieve your goals</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
         {/* Main Column */}
-        <div className="space-y-6">
+        <div className="lg:col-span-8 space-y-6">
 
           {/* Stats Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -79,13 +86,13 @@ const AthleteDashboard = () => {
             {/* Training Sessions */}
             <div className="bg-indigo-50 dark:bg-indigo-900/10 rounded-3xl p-6 border border-indigo-100 dark:border-indigo-900/30">
               <div className="flex justify-between items-start mb-4">
-                <span className="font-semibold text-slate-700 dark:text-slate-300">Training Sessions</span>
+                <span className="font-semibold text-slate-700 dark:text-slate-300">Total Sessions</span>
                 <div className="w-8 h-8 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center text-indigo-600 shadow-sm">
                   <Play size={14} className="fill-current" />
                 </div>
               </div>
-              <h2 className="text-4xl font-black text-slate-900 dark:text-white">24</h2>
-              <p className="text-sm text-slate-500 mb-4">This Month</p>
+              <h2 className="text-4xl font-black text-slate-900 dark:text-white">{stats.totalSessions}</h2>
+              <p className="text-sm text-slate-500 mb-4">{stats.upcomingSessions} Upcoming</p>
               <div className="flex items-end gap-1.5 h-10">
                 {[40, 60, 30, 80, 50, 70, 90, 60].map((h, i) => (
                   <div key={i} className="flex-1 bg-indigo-200 dark:bg-indigo-800/50 rounded-sm" style={{ height: `${h}%` }} />
@@ -96,15 +103,18 @@ const AthleteDashboard = () => {
             {/* Goals Completed */}
             <div className="bg-orange-50 dark:bg-orange-900/10 rounded-3xl p-6 border border-orange-100 dark:border-orange-900/30">
               <div className="flex justify-between items-start mb-4">
-                <span className="font-semibold text-slate-700 dark:text-slate-300">Goals Completed</span>
+                <span className="font-semibold text-slate-700 dark:text-slate-300">Completed Sessions</span>
                 <div className="w-8 h-8 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center text-orange-500 shadow-sm">
                   <Target size={14} />
                 </div>
               </div>
-              <h2 className="text-4xl font-black text-slate-900 dark:text-white">8/12</h2>
-              <p className="text-sm text-slate-500 mb-4">67% Achievement</p>
+              <h2 className="text-4xl font-black text-slate-900 dark:text-white">{stats.completedSessions}</h2>
+              <p className="text-sm text-slate-500 mb-4">{stats.activeTrainers} Active Trainers</p>
               <div className="w-full bg-orange-200 dark:bg-orange-900/50 h-2 rounded-full">
-                <div className="w-[67%] bg-orange-500 h-full rounded-full" />
+                <div 
+                  className="bg-orange-500 h-full rounded-full transition-all duration-1000" 
+                  style={{ width: `${Math.min(100, (stats.completedSessions / (stats.totalSessions || 1)) * 100)}%` }} 
+                />
               </div>
             </div>
           </div>
@@ -120,7 +130,7 @@ const AthleteDashboard = () => {
                 </p>
               </div>
               <div className="text-right">
-                <span className="text-2xl font-black text-slate-900 dark:text-white">87.51</span>
+                <span className="text-2xl font-black text-slate-900 dark:text-white">{stats.performanceScore.toFixed(2)}</span>
                 <span className="text-xs text-slate-500 ml-1">pts</span>
               </div>
             </div>
@@ -136,54 +146,71 @@ const AthleteDashboard = () => {
               <History size={18} className="text-indigo-600" />
               Recent Training Sessions
             </h3>
-            <div className="space-y-4">
-              {RECENT_SESSIONS.map((session) => (
-                <div key={session.id} className="bg-slate-50 dark:bg-slate-700/50 rounded-2xl p-5 border border-slate-100 dark:border-slate-700 relative">
-                  <span className="absolute top-5 right-5 text-xs font-bold text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded">
-                    {session.year}
-                  </span>
-                  <h4 className="font-bold text-slate-900 dark:text-white mb-1">{session.trainer}</h4>
-                  <p className="text-xs text-slate-500 mb-2">{session.sport}</p>
-                  <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400 mb-2">
-                    <Calendar size={12} />
-                    {session.duration}
+            {sessions.length === 0 ? (
+              <div className="text-center py-10">
+                <p className="text-slate-400 text-sm italic">No training sessions recorded yet.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {sessions.map((session) => (
+                  <div key={session._id} className="bg-slate-50 dark:bg-slate-700/50 rounded-2xl p-5 border border-slate-100 dark:border-slate-700 flex items-start gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-slate-200 dark:bg-slate-600 overflow-hidden flex-shrink-0">
+                      <img src={getImageUrl(session.trainer?.avatar)} alt={session.trainer?.name} className="w-full h-full object-cover" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <h4 className="font-bold text-slate-900 dark:text-white truncate">{session.trainer?.name}</h4>
+                        <span className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase ${
+                          session.status === 'completed' ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'
+                        }`}>
+                          {session.status}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 text-xs text-slate-500">
+                        <span className="flex items-center gap-1"><Calendar size={12} /> {new Date(session.date).toLocaleDateString()}</span>
+                        <span className="font-bold text-indigo-600">{session.type}</span>
+                      </div>
+                    </div>
                   </div>
-                  <p className="text-sm text-slate-700 dark:text-slate-300">{session.result}</p>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
 
         </div>
 
         {/* Right Sidebar */}
-        <div className="space-y-6">
+        <div className="lg:col-span-4 space-y-6">
 
           {/* Profile Card */}
-          <div className="bg-gradient-to-b from-indigo-600/90 to-indigo-700 rounded-3xl p-5 shadow-lg text-white">
+          <div className="bg-gradient-to-b from-indigo-600/90 to-indigo-700 rounded-3xl p-6 shadow-lg text-white">
             <h3 className="font-black text-xl mt-2 mb-1">{name}</h3>
             <p className="text-xs text-white/70 flex items-center gap-1 mb-4">
-              <MapPin size={12} /> {location || 'Location not set'}
+              <MapPin size={12} /> {profile.location}
             </p>
-            <div className="aspect-[4/5] rounded-2xl overflow-hidden bg-slate-700 mb-4">
-              <div className="w-full h-full flex items-center justify-center bg-indigo-800 text-white/30 text-6xl font-black">
-                {name.charAt(0)}
-              </div>
+            <div className="aspect-square rounded-2xl overflow-hidden bg-slate-700/50 mb-6 border-2 border-white/10">
+              {user?.avatar ? (
+                <img src={getImageUrl(user.avatar)} alt={name} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-white/20 text-7xl font-black">
+                  {name.charAt(0)}
+                </div>
+              )}
             </div>
-            <div className="grid grid-cols-3 gap-2 text-center mb-4">
+            <div className="grid grid-cols-3 gap-2 text-center mb-6">
               {[
-                { label: 'age',   val: age   || '—' },
-                { label: 'sport', val: sport || '—' },
-                { label: 'level', val: level || '—' },
+                { label: 'age',   val: profile.age },
+                { label: 'sport', val: profile.sport },
+                { label: 'level', val: profile.level },
               ].map((s) => (
-                <div key={s.label}>
-                  <div className="text-sm font-black">{s.val}</div>
-                  <div className="text-[10px] text-white/60">{s.label}</div>
+                <div key={s.label} className="bg-white/10 rounded-xl py-2">
+                  <div className="text-sm font-black truncate px-1">{s.val}</div>
+                  <div className="text-[10px] text-white/60 uppercase font-bold tracking-tighter">{s.label}</div>
                 </div>
               ))}
             </div>
-            <Link to="/athlete/profile" className="block">
-              <button className="w-full py-2.5 bg-white/20 hover:bg-white/30 border border-white/30 text-white text-sm font-bold rounded-xl transition-colors flex items-center justify-center gap-2">
+            <Link to="/athlete/profile/edit" className="block">
+              <button className="w-full py-3 bg-white text-indigo-600 text-sm font-black rounded-xl hover:bg-slate-100 transition-colors flex items-center justify-center gap-2 shadow-sm">
                 <Edit2 size={14} /> Edit Profile
               </button>
             </Link>
@@ -192,7 +219,7 @@ const AthleteDashboard = () => {
           {/* Quick Actions */}
           <div className="bg-white dark:bg-slate-800 rounded-3xl p-5 border border-slate-100 dark:border-slate-700 shadow-sm">
             <h3 className="font-bold text-slate-900 dark:text-white mb-4 text-sm">Quick Actions</h3>
-            <div className="space-y-2">
+            <div className="grid grid-cols-2 lg:grid-cols-1 gap-2">
               {[
                 { to: '/coaches', icon: Search, label: 'Find Trainers' },
                 { to: '/requests', icon: Target, label: 'My Requests' },
@@ -212,14 +239,10 @@ const AthleteDashboard = () => {
 
           {/* Availability */}
           <div className="bg-white dark:bg-slate-800 rounded-3xl p-5 border border-slate-100 dark:border-slate-700 shadow-sm">
-            <h3 className="font-bold text-slate-900 dark:text-white mb-4 text-sm">Availability</h3>
-            <div className="space-y-2">
-              {['Monday', 'Wednesday', 'Friday'].map((day) => (
-                <div key={day} className="flex items-center gap-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-700/50 border border-slate-100 dark:border-slate-700">
-                  <CheckCircle2 size={16} className="text-green-500" />
-                  <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{day}</span>
-                </div>
-              ))}
+            <h3 className="font-bold text-slate-900 dark:text-white mb-4 text-sm">Target Goal</h3>
+            <div className="p-4 rounded-xl bg-orange-50 dark:bg-orange-900/10 border border-orange-100 dark:border-orange-900/30 text-center">
+              <p className="text-xs font-bold text-orange-600 dark:text-orange-400 uppercase mb-1">Primary Objective</p>
+              <p className="text-sm font-black text-slate-900 dark:text-white">{profile.goal}</p>
             </div>
           </div>
 

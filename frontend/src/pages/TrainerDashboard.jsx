@@ -8,8 +8,9 @@ import {
 import StatCard from '../components/StatCard';
 import DashboardLayout from '../components/DashboardLayout';
 import { useSelector } from 'react-redux';
-import { trainerService } from '../api/dataService';
+import { trainerService, requestService } from '../api/dataService';
 import { getImageUrl } from '../utils/imageUrl';
+import { toast } from 'react-hot-toast';
 
 // Generate initials avatar with consistent color
 const Avatar = ({ name, className = '' }) => {
@@ -90,6 +91,29 @@ const TrainerDashboard = () => {
     };
     fetchDashboard();
   }, []);
+
+  const handleAccept = async (requestId) => {
+    try {
+      await requestService.accept(requestId);
+      toast.success('Request accepted!');
+      setAthleteRequests(prev => prev.filter(r => r.id !== requestId));
+      // Refresh stats if needed
+      const data = await trainerService.getDashboardStats();
+      setStats(data.stats || stats);
+    } catch (err) {
+      toast.error('Failed to accept request');
+    }
+  };
+
+  const handleDecline = async (requestId) => {
+    try {
+      await requestService.decline(requestId);
+      toast.success('Request declined');
+      setAthleteRequests(prev => prev.filter(r => r.id !== requestId));
+    } catch (err) {
+      toast.error('Failed to decline request');
+    }
+  };
 
   const maxValue = earningsData.length > 0 ? Math.max(...earningsData.map(d => d.value)) : 1;
 
@@ -252,31 +276,52 @@ const TrainerDashboard = () => {
                   <h3 className="font-bold text-slate-900 dark:text-white">Athlete Requests</h3>
                   <p className="text-xs text-slate-400">Pending approval</p>
                 </div>
-                <span className="bg-primary-orange/10 text-primary-orange text-xs font-bold px-2 py-0.5 rounded-full">2 new</span>
+                <div className="flex items-center gap-3">
+                  <Link to="/requests" className="text-xs font-bold text-primary-blue hover:underline">View All</Link>
+                  {athleteRequests.length > 0 && (
+                    <span className="bg-primary-orange/10 text-primary-orange text-xs font-bold px-2 py-0.5 rounded-full">
+                      {athleteRequests.length} new
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="space-y-3">
-                {athleteRequests.map(req => (
-                  <div key={req.id} className="flex flex-wrap items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-white/5">
-                    <div className={`${req.color} w-10 h-10 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>
-                      {req.initials}
-                    </div>
-                    <div className="flex-1 min-w-[120px]">
-                      <p className="text-sm font-bold text-slate-900 dark:text-white">{req.name}</p>
-                      <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
-                        <span className="text-xs font-semibold bg-primary-orange/10 text-primary-orange px-1.5 py-0.5 rounded">{req.sport}</span>
-                        <span className="text-xs text-slate-400 hidden sm:inline">{req.level} · Goal: {req.goal}</span>
+                {athleteRequests.length === 0 ? (
+                  <p className="text-sm text-slate-400 text-center py-4">No pending requests</p>
+                ) : (
+                  athleteRequests.map(req => (
+                    <div key={req.id} className="flex flex-wrap items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-white/5">
+                      {req.avatar ? (
+                        <img src={getImageUrl(req.avatar)} alt={req.name} className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
+                      ) : (
+                        <div className={`${req.color} w-10 h-10 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>
+                          {req.initials}
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-[120px]">
+                        <p className="text-sm font-bold text-slate-900 dark:text-white">{req.name}</p>
+                        <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                          <span className="text-xs font-semibold bg-primary-orange/10 text-primary-orange px-1.5 py-0.5 rounded">{req.sport}</span>
+                          <span className="text-xs text-slate-400 hidden sm:inline">{req.level} · Goal: {req.goal}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 ml-auto">
+                        <button 
+                          onClick={() => handleDecline(req.id)}
+                          className="flex items-center gap-1 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 px-2 py-1 rounded-lg transition-colors"
+                        >
+                          <XCircle size={14} /> <span className="hidden sm:inline">Decline</span>
+                        </button>
+                        <button 
+                          onClick={() => handleAccept(req.id)}
+                          className="flex items-center gap-1 text-xs font-bold text-white bg-primary-blue px-3 py-1.5 rounded-lg hover:opacity-90 transition-opacity"
+                        >
+                          <CheckCircle size={14} /> <span className="hidden sm:inline">Accept</span>
+                        </button>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 ml-auto">
-                      <button className="flex items-center gap-1 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 px-2 py-1 rounded-lg transition-colors">
-                        <XCircle size={14} /> <span className="hidden sm:inline">Decline</span>
-                      </button>
-                      <button className="flex items-center gap-1 text-xs font-bold text-white bg-primary-blue px-3 py-1.5 rounded-lg hover:opacity-90 transition-opacity">
-                        <CheckCircle size={14} /> <span className="hidden sm:inline">Accept</span>
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
           </div>

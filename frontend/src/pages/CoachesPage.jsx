@@ -1,6 +1,7 @@
+import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Star, Send, Heart } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { trainerService, chatService, favoriteService } from '../api/dataService';
 
 const WILAYAS = [
@@ -127,72 +128,45 @@ const CoachesPage = () => {
               </div>
 
               {/* Sport filter */}
-              <div className="mb-6">
-                <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3 flex items-center justify-between">
+              <div className="mb-5">
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-2 block">
                   Sport
-                  <span className="text-[10px] text-indigo-500 lowercase font-medium">{sportFilter}</span>
-                </p>
-                <div className="flex flex-wrap gap-2 max-h-[160px] overflow-y-auto pr-1 custom-scrollbar">
-                  {SPORTS.map((s) => (
-                    <button
-                      key={s}
-                      onClick={() => setSportFilter(s)}
-                      className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all border ${
-                        sportFilter === s 
-                          ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm' 
-                          : 'bg-slate-50 dark:bg-slate-700/50 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:border-indigo-400'
-                      }`}
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
+                </label>
+                <select
+                  value={sportFilter}
+                  onChange={(e) => setSportFilter(e.target.value)}
+                  className="w-full px-4 py-2.5 text-sm rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                >
+                  {SPORTS.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
               </div>
 
               {/* Experience */}
-              <div className="mb-6">
-                <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3 flex items-center justify-between">
+              <div className="mb-5">
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-2 block">
                   Experience
-                  <span className="text-[10px] text-indigo-500 lowercase font-medium">{expFilter}</span>
-                </p>
-                <div className="flex flex-wrap gap-2 pr-1">
-                  {['All', '1-3 Years', '3-5 Years', '5+ Years'].map((e) => (
-                    <button
-                      key={e}
-                      onClick={() => setExpFilter(e)}
-                      className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all border ${
-                        expFilter === e 
-                          ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm' 
-                          : 'bg-slate-50 dark:bg-slate-700/50 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:border-indigo-400'
-                      }`}
-                    >
-                      {e}
-                    </button>
-                  ))}
-                </div>
+                </label>
+                <select
+                  value={expFilter}
+                  onChange={(e) => setExpFilter(e.target.value)}
+                  className="w-full px-4 py-2.5 text-sm rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                >
+                  {['All', '1-3 Years', '3-5 Years', '5+ Years'].map(e => <option key={e} value={e}>{e}</option>)}
+                </select>
               </div>
 
               {/* Wilaya */}
               <div className="mb-6">
-                <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3 flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-2 block">
                   Wilaya
-                  <span className="text-[10px] text-indigo-500 lowercase font-medium">{wilaya}</span>
-                </p>
-                <div className="flex flex-wrap gap-2 max-h-[160px] overflow-y-auto pr-1 custom-scrollbar">
-                  {WILAYAS.map((w) => (
-                    <button
-                      key={w}
-                      onClick={() => setWilaya(w)}
-                      className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all border ${
-                        wilaya === w 
-                          ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm' 
-                          : 'bg-slate-50 dark:bg-slate-700/50 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:border-indigo-400'
-                      }`}
-                    >
-                      {w}
-                    </button>
-                  ))}
-                </div>
+                </label>
+                <select
+                  value={wilaya}
+                  onChange={(e) => setWilaya(e.target.value)}
+                  className="w-full px-4 py-2.5 text-sm rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                >
+                  {WILAYAS.map(w => <option key={w} value={w}>{w}</option>)}
+                </select>
               </div>
 
               {/* Price Range */}

@@ -24,6 +24,12 @@ const coachingRequestSchema = new mongoose.Schema(
       default: "pending",
       index: true,
     },
+    sentBy: {
+      type: String,
+      enum: ["athlete", "trainer"],
+      required: true,
+      default: "athlete",
+    },
   },
   { timestamps: true }
 );

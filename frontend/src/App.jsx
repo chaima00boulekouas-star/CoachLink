@@ -4,6 +4,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import { Provider } from 'react-redux';
 import { store } from './redux/store';
 import MainLayout from './components/MainLayout';
+import { Toaster } from 'react-hot-toast';
 
 // ── Public pages (use MainLayout with Navbar + Footer) ──
 import Home from './pages/Home';
@@ -57,6 +58,7 @@ const App = () => {
     <Provider store={store}>
       <ThemeProvider>
         <Router>
+          <Toaster position="top-right" reverseOrder={false} />
           <Routes>
             {/* ── Public Routes ── */}
             <Route

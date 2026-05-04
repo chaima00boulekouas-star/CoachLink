@@ -1,5 +1,6 @@
 import Session from "../Models/Session.Model.js";
 import User from "../Models/User.Model.js";
+import CoachingRequest from "../Models/CoachingRequest.Model.js";
 import { createNotification } from "./notification.controller.js";
 
 // @desc    Create a session (trainer schedules for their athlete)
@@ -18,6 +19,17 @@ export const createSession = async (req, res) => {
     const athlete = await User.findById(athleteId);
     if (!athlete || athlete.role !== "athlete") {
       return res.status(404).json({ message: "Athlete not found." });
+    }
+
+    // Verify coaching relationship exists and is accepted
+    const connection = await CoachingRequest.findOne({
+      athlete: athleteId,
+      trainer: trainerId,
+      status: "accepted"
+    });
+
+    if (!connection) {
+      return res.status(403).json({ message: "You can only schedule sessions with athletes who have accepted your coaching request." });
     }
 
     if (new Date(date) < new Date()) {
@@ -156,7 +168,6 @@ export const updateSessionStatus = async (req, res) => {
 // @access  Private (Trainer)
 export const getAcceptedAthletes = async (req, res) => {
   try {
-    const CoachingRequest = (await import("../Models/CoachingRequest.Model.js")).default;
     const acceptedRequests = await CoachingRequest.find({
       trainer: req.user._id,
       status: "accepted",

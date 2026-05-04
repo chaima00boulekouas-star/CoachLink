@@ -7,18 +7,29 @@ import { createNotification } from './notification.controller.js';
 // @access  Private (Athlete)
 export const sendRequest = async (req, res) => {
   try {
-    const { trainerId, message } = req.body;
-    const athleteId = req.user._id;
+    const { trainerId: recipientId, message } = req.body;
+    const senderId = req.user._id;
 
-    if (!trainerId || !message) {
-      return res.status(400).json({ message: 'Trainer ID and message are required' });
+    if (!recipientId || !message) {
+      return res.status(400).json({ message: 'Recipient ID and message are required' });
     }
 
-    // Check trainer exists and is actually a trainer
-    const trainer = await User.findById(trainerId);
-    if (!trainer || trainer.role !== 'trainer') {
-      return res.status(404).json({ message: 'Trainer not found' });
+    // Check recipient exists
+    const recipient = await User.findById(recipientId);
+    if (!recipient) {
+      return res.status(404).json({ message: 'Recipient not found' });
     }
+
+    // Validate roles
+    if (req.user.role === 'athlete' && recipient.role !== 'trainer') {
+      return res.status(400).json({ message: 'Athletes can only send requests to trainers' });
+    }
+    if (req.user.role === 'trainer' && recipient.role !== 'athlete') {
+      return res.status(400).json({ message: 'Trainers can only send invitations to athletes' });
+    }
+
+    const athleteId = req.user.role === 'athlete' ? senderId : recipientId;
+    const trainerId = req.user.role === 'trainer' ? senderId : recipientId;
 
     // Check if a pending request already exists
     const existing = await CoachingRequest.findOne({
@@ -27,24 +38,26 @@ export const sendRequest = async (req, res) => {
       status: 'pending',
     });
     if (existing) {
-      return res.status(409).json({ message: 'You already have a pending request with this trainer' });
+      return res.status(409).json({ message: 'A pending request already exists between you' });
     }
 
     const request = await CoachingRequest.create({
       athlete: athleteId,
       trainer: trainerId,
       message,
+      sentBy: req.user.role
     });
 
-    // Populate for the response
-    await request.populate('trainer', 'name email avatar');
+    // Populate the other person's info for the response
+    const populateField = req.user.role === 'athlete' ? 'trainer' : 'athlete';
+    await request.populate(populateField, 'name email avatar');
 
-    // Notify the trainer about the new request
+    // Notify the recipient
     await createNotification({
-      recipient: trainerId,
+      recipient: recipientId,
       type: 'request',
-      title: 'New Training Request',
-      message: `${req.user.name} sent you a training request.`,
+      title: req.user.role === 'athlete' ? 'New Training Request' : 'New Coaching Invitation',
+      message: `${req.user.name} sent you a ${req.user.role === 'athlete' ? 'request' : 'invitation'}.`,
       relatedId: request._id,
       relatedModel: 'CoachingRequest',
     });
@@ -56,13 +69,22 @@ export const sendRequest = async (req, res) => {
   }
 };
 
-// @desc    Get incoming requests (for trainer)
+// @desc    Get incoming requests (where user is the recipient)
 // @route   GET /api/requests/incoming
-// @access  Private (Trainer)
+// @access  Private
 export const getIncomingRequests = async (req, res) => {
   try {
-    const requests = await CoachingRequest.find({ trainer: req.user._id })
+    const userId = req.user._id;
+    const query = {
+      $or: [
+        { trainer: userId, sentBy: 'athlete' },
+        { athlete: userId, sentBy: 'trainer' }
+      ]
+    };
+
+    const requests = await CoachingRequest.find(query)
       .populate('athlete', 'name email avatar phone')
+      .populate('trainer', 'name email avatar phone')
       .sort({ createdAt: -1 });
 
     res.json({ requests });
@@ -72,18 +94,47 @@ export const getIncomingRequests = async (req, res) => {
   }
 };
 
-// @desc    Get outgoing requests (for athlete)
+// @desc    Get outgoing requests (where user is the sender)
 // @route   GET /api/requests/outgoing
-// @access  Private (Athlete)
+// @access  Private
 export const getOutgoingRequests = async (req, res) => {
   try {
-    const requests = await CoachingRequest.find({ athlete: req.user._id })
+    const userId = req.user._id;
+    const query = {
+      $or: [
+        { athlete: userId, sentBy: 'athlete' },
+        { trainer: userId, sentBy: 'trainer' }
+      ]
+    };
+
+    const requests = await CoachingRequest.find(query)
+      .populate('athlete', 'name email avatar phone')
       .populate('trainer', 'name email avatar phone')
       .sort({ createdAt: -1 });
 
     res.json({ requests });
   } catch (err) {
     console.error('Get outgoing requests error:', err);
+    res.status(500).json({ message: err.message || 'Server error' });
+  }
+};
+
+// @desc    Get all requests for the current user
+// @route   GET /api/requests
+// @access  Private
+export const getAllRequests = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const requests = await CoachingRequest.find({
+      $or: [{ athlete: userId }, { trainer: userId }]
+    })
+      .populate('athlete', 'name email avatar phone')
+      .populate('trainer', 'name email avatar phone')
+      .sort({ createdAt: -1 });
+
+    res.json({ requests });
+  } catch (err) {
+    console.error('Get all requests error:', err);
     res.status(500).json({ message: err.message || 'Server error' });
   }
 };
@@ -99,9 +150,12 @@ export const acceptRequest = async (req, res) => {
       return res.status(404).json({ message: 'Request not found' });
     }
 
-    // Verify trainer owns this request
-    if (request.trainer.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: 'Not authorized' });
+    // Verify the correct person is responding
+    const isTrainerResponding = request.sentBy === 'athlete' && request.trainer.toString() === req.user._id.toString();
+    const isAthleteResponding = request.sentBy === 'trainer' && request.athlete.toString() === req.user._id.toString();
+
+    if (!isTrainerResponding && !isAthleteResponding) {
+      return res.status(403).json({ message: 'Not authorized to respond to this request' });
     }
 
     if (request.status !== 'pending') {
@@ -141,8 +195,11 @@ export const declineRequest = async (req, res) => {
       return res.status(404).json({ message: 'Request not found' });
     }
 
-    if (request.trainer.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: 'Not authorized' });
+    const isTrainerResponding = request.sentBy === 'athlete' && request.trainer.toString() === req.user._id.toString();
+    const isAthleteResponding = request.sentBy === 'trainer' && request.athlete.toString() === req.user._id.toString();
+
+    if (!isTrainerResponding && !isAthleteResponding) {
+      return res.status(403).json({ message: 'Not authorized to respond to this request' });
     }
 
     if (request.status !== 'pending') {

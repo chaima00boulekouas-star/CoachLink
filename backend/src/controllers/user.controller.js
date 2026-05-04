@@ -4,6 +4,7 @@ import crypto from 'crypto';
 import User from '../Models/User.Model.js';
 import TrainerProfile from '../Models/TrainerProfile.Model.js';
 import AthleteProfile from '../Models/AthleteProfile.Model.js';
+import CoachingRequest from '../Models/CoachingRequest.Model.js';
 import { sendVerificationEmail } from '../utils/email.util.js';
 
 const signToken = (user) =>
@@ -309,9 +310,17 @@ export const getAthletes = async (req, res) => {
       profileMap[p.user.toString()] = p;
     });
 
-    // Merge profile data into each athlete
+    // Fetch all requests involving this trainer
+    const trainerRequests = await CoachingRequest.find({ trainer: req.user._id }).lean();
+    const requestMap = {};
+    trainerRequests.forEach(r => {
+      requestMap[r.athlete.toString()] = { status: r.status, sentBy: r.sentBy, id: r._id };
+    });
+
+    // Merge profile data and request status into each athlete
     const enriched = athletes.map(a => {
       const profile = profileMap[a._id.toString()] || {};
+      const request = requestMap[a._id.toString()] || null;
       return {
         ...a,
         sports: profile.sports || [],
@@ -323,6 +332,9 @@ export const getAthletes = async (req, res) => {
         style: profile.style || null,
         availability: profile.availability || [],
         profileLocation: profile.location || null,
+        connectionStatus: request ? request.status : 'none',
+        requestSentBy: request ? request.sentBy : null,
+        requestId: request ? request.id : null,
       };
     });
 
@@ -397,6 +409,15 @@ export const updateUser = async (req, res) => {
     res.json({ user: safeUser(user, profileData) });
   } catch (err) {
     console.error('Update user error:', err);
+    res.status(500).json({ message: err.message || 'Server error' });
+  }
+};
+
+export const updateMe = async (req, res) => {
+  try {
+    req.params.id = req.user.id;
+    return updateUser(req, res);
+  } catch (err) {
     res.status(500).json({ message: err.message || 'Server error' });
   }
 };

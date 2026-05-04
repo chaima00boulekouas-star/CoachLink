@@ -29,7 +29,8 @@ const formatDate = (dateStr) => {
 
 const TrainerRequestCard = ({ request, onAccept, onDecline }) => {
   const Icon = StatusIcon[request.status];
-  const athlete = request.athlete;
+  const role = useSelector(s => s.auth.role);
+  const otherParty = role === 'trainer' ? request.athlete : request.trainer;
   const [acting, setActing] = useState(false);
 
   const handleAccept = async () => {
@@ -55,14 +56,14 @@ const TrainerRequestCard = ({ request, onAccept, onDecline }) => {
       <div className="flex items-start gap-4 p-5">
         <div className="w-14 h-14 rounded-xl bg-slate-200 dark:bg-slate-700 overflow-hidden flex-shrink-0">
           <img
-            src={getImageUrl(athlete?.avatar, `https://ui-avatars.com/api/?name=${encodeURIComponent(athlete?.name || 'A')}&background=6366f1&color=fff`)}
-            alt={athlete?.name}
+            src={getImageUrl(otherParty?.avatar, `https://ui-avatars.com/api/?name=${encodeURIComponent(otherParty?.name || 'U')}&background=6366f1&color=fff`)}
+            alt={otherParty?.name}
             className="w-full h-full object-cover"
           />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="font-bold text-slate-900 dark:text-white">{athlete?.name || 'Athlete'}</h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400">{athlete?.email}</p>
+          <h3 className="font-bold text-slate-900 dark:text-white">{otherParty?.name || 'User'}</h3>
+          <p className="text-sm text-slate-500 dark:text-slate-400">{otherParty?.email}</p>
         </div>
         <div className="flex-shrink-0">
           {request.status === 'pending' ? (
@@ -140,7 +141,8 @@ const TrainerRequestCard = ({ request, onAccept, onDecline }) => {
 
 const AthleteRequestCard = ({ request, onCancel }) => {
   const Icon = StatusIcon[request.status];
-  const trainer = request.trainer;
+  const role = useSelector(s => s.auth.role);
+  const otherParty = role === 'trainer' ? request.athlete : request.trainer;
 
   return (
     <motion.div
@@ -152,14 +154,14 @@ const AthleteRequestCard = ({ request, onCancel }) => {
       <div className="flex items-start gap-4 p-5">
         <div className="w-14 h-14 rounded-xl bg-slate-200 dark:bg-slate-700 overflow-hidden flex-shrink-0">
           <img
-            src={getImageUrl(trainer?.avatar, `https://ui-avatars.com/api/?name=${encodeURIComponent(trainer?.name || 'T')}&background=f97316&color=fff`)}
-            alt={trainer?.name}
+            src={getImageUrl(otherParty?.avatar, `https://ui-avatars.com/api/?name=${encodeURIComponent(otherParty?.name || 'U')}&background=f97316&color=fff`)}
+            alt={otherParty?.name}
             className="w-full h-full object-cover"
           />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="font-bold text-slate-900 dark:text-white">{trainer?.name || 'Trainer'}</h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400">{trainer?.email}</p>
+          <h3 className="font-bold text-slate-900 dark:text-white">{otherParty?.name || 'User'}</h3>
+          <p className="text-sm text-slate-500 dark:text-slate-400">{otherParty?.email}</p>
         </div>
         <div className="flex-shrink-0 flex items-center gap-2">
           <span className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl border ${statusBadge[request.status]}`}>
@@ -203,12 +205,12 @@ const AthleteRequestCard = ({ request, onCancel }) => {
             className="mx-5 mb-5 rounded-xl border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/10 p-4"
           >
             <p className="text-xs font-bold text-green-600 dark:text-green-400 flex items-center gap-2">
-              <CheckCircle size={13} /> Request Accepted! You are now a trainee of {trainer?.name}.
+              <CheckCircle size={13} /> Request Accepted! You are now a trainee of {otherParty?.name}.
             </p>
-            {trainer?.email && (
+            {otherParty?.email && (
               <div className="flex items-center gap-2 mt-2">
                 <Mail size={13} className="text-indigo-600" />
-                <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">{trainer.email}</span>
+                <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">{otherParty.email}</span>
               </div>
             )}
           </motion.div>
@@ -242,9 +244,7 @@ const MyTrainerRequests = () => {
     const fetchRequests = async () => {
       setLoading(true);
       try {
-        const res = isAthlete
-          ? await requestService.getOutgoing()
-          : await requestService.getIncoming();
+        const res = await requestService.getAll();
         setRequests(res.requests || []);
       } catch (err) {
         console.error('Failed to fetch requests:', err);
@@ -343,13 +343,17 @@ const MyTrainerRequests = () => {
               <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
             </div>
           ) : filteredRequests.length > 0 ? (
-            filteredRequests.map((req) => (
-              isAthlete ? (
-                <AthleteRequestCard key={req._id} request={req} onCancel={handleCancel} />
-              ) : (
-                <TrainerRequestCard key={req._id} request={req} onAccept={handleAccept} onDecline={handleDecline} />
-              )
-            ))
+            filteredRequests.map((req) => {
+              // A request is "Outgoing" for the current user if they sent it.
+              // Otherwise it is "Incoming".
+              const isOutgoing = (isAthlete && req.sentBy === 'athlete') || (!isAthlete && req.sentBy === 'trainer');
+              
+              if (isOutgoing) {
+                return <AthleteRequestCard key={req._id} request={req} onCancel={handleCancel} />;
+              } else {
+                return <TrainerRequestCard key={req._id} request={req} onAccept={handleAccept} onDecline={handleDecline} />;
+              }
+            })
           ) : (
             <div className="text-center py-16 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700">
               <div className="w-16 h-16 mx-auto mb-4 bg-slate-100 dark:bg-slate-700 rounded-2xl flex items-center justify-center">
