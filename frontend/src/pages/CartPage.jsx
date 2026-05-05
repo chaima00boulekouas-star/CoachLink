@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ShoppingCart, Trash2, Plus, Minus, ShoppingBag, ArrowLeft } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
-import { cartService } from '../api/dataService';
+import { cartService, orderService, paymentService } from '../api/dataService';
 import api from '../api/axios';
+import { toast } from 'react-hot-toast';
 
 const CartPage = () => {
   const [items, setItems]         = useState([]);
@@ -52,12 +53,33 @@ const CartPage = () => {
   const total    = subtotal + tax;
 
   const handleCheckout = async () => {
+    if (items.length === 0) return;
+    
     setProcess(true);
     try {
-      await api.post('/api/checkout', { items });
-      setChecked(true);
+      // 1. Map cart items to the format expected by the backend
+      const orderItems = items.map(item => ({
+        product: item._id || item.id,
+        quantity: item.qty
+      }));
+
+      // 2. Create the order on the backend
+      const orderRes = await orderService.create({ orderItems });
+      const orderId = orderRes.orderId;
+
+      // 3. Create the Chargily checkout session
+      const paymentRes = await paymentService.createCheckout(orderId);
+      
+      if (paymentRes.checkoutUrl) {
+        // 4. Redirect the user to Chargily Payment Page
+        window.location.href = paymentRes.checkoutUrl;
+      } else {
+        throw new Error("Payment link was not generated.");
+      }
+      
     } catch (err) {
       console.error('Checkout failed:', err);
+      toast.error(err.response?.data?.message || "Checkout failed. Please try again.");
     } finally {
       setProcess(false);
     }
