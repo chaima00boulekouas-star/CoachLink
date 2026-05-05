@@ -21,6 +21,8 @@ const safeUser = (user, extra = {}) => ({
   role: user.role,
   phone: user.phone || null,
   avatar: user.avatar || null,
+  isSubscribed: user.isSubscribed || false,
+  isTrainerVerified: user.isTrainerVerified || false,
   ...extra,
 });
 
@@ -88,7 +90,9 @@ export const createUser = async (req, res) => {
       password: hashed, 
       role,
       verificationToken,
-      isVerified: req.body.isVerified || false
+      isVerified: req.body.isVerified || false,
+      isSubscribed: false, // New trainers must pay
+      isTrainerVerified: false // New trainers must be verified by admin
     });
 
     // Send verification email only if not already verified

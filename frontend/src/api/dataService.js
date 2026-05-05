@@ -415,6 +415,24 @@ export const adminService = {
     const res = await api.get('/api/admin/products');
     return res.data;
   },
+
+  // Verify trainer
+  verifyTrainer: async (id) => {
+    const res = await api.put(`/api/admin/users/${id}/verify`);
+    return res.data;
+  },
+
+  // Bulk verify trainers
+  bulkVerifyTrainers: async () => {
+    const res = await api.post('/api/admin/bulk-verify-trainers');
+    return res.data;
+  },
+
+  // Toggle user subscription
+  toggleUserSubscription: async (id) => {
+    const res = await api.put(`/api/admin/users/${id}/subscription`);
+    return res.data;
+  },
 };
 
 // ── Feedback API Service ──────────────────────────────────────────────────

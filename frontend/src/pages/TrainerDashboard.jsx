@@ -7,8 +7,10 @@ import {
 } from 'lucide-react';
 import StatCard from '../components/StatCard';
 import DashboardLayout from '../components/DashboardLayout';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { trainerService, requestService } from '../api/dataService';
+import authService from '../api/authService';
+import { updateUser } from '../redux/store';
 import { getImageUrl } from '../utils/imageUrl';
 import { toast } from 'react-hot-toast';
 
@@ -74,6 +76,8 @@ const TrainerDashboard = () => {
   const [athleteRequests, setAthleteRequests] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const dispatch = useDispatch();
+
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
@@ -83,6 +87,12 @@ const TrainerDashboard = () => {
         setRecentOrders(data.recentOrders || []);
         setUpcomingSessions(data.upcomingSessions || []);
         setAthleteRequests(data.athleteRequests || []);
+
+        // Refresh user data to ensure verification/subscription status is current
+        const freshUser = await authService.getMe();
+        if (freshUser) {
+          dispatch(updateUser(freshUser));
+        }
       } catch (err) {
         console.error('Failed to fetch dashboard:', err);
       } finally {
@@ -90,7 +100,7 @@ const TrainerDashboard = () => {
       }
     };
     fetchDashboard();
-  }, []);
+  }, [dispatch]);
 
   const handleAccept = async (requestId) => {
     try {
@@ -129,12 +139,23 @@ const TrainerDashboard = () => {
                 <p className="text-sm text-slate-500 dark:text-slate-400 mb-0.5">Welcome back 👋</p>
                 <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white flex items-center gap-2">
                   {userName}
-                  {user?.isVerified && (
+                  {user?.isTrainerVerified && (
                     <span title="Verified Professional" className="bg-primary-blue/10 p-1 rounded-full">
                       <CheckCircle size={20} className="text-primary-blue fill-primary-blue/20" />
                     </span>
                   )}
                 </h1>
+                <div className="mt-2 flex items-center gap-2">
+                  {user?.isSubscribed ? (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 text-[10px] font-black text-indigo-600 uppercase tracking-wider">
+                      Premium Plan
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-[10px] font-black text-slate-500 uppercase tracking-wider">
+                      Free Plan
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="text-right">
                 <p className="hidden sm:block text-sm text-slate-500 dark:text-slate-400">{today}</p>
@@ -356,7 +377,7 @@ const TrainerDashboard = () => {
                 </div>
                 <h3 className="font-black text-slate-900 dark:text-white text-base mb-0.5 flex items-center justify-center gap-1.5">
                   {userName}
-                  {user?.isVerified && <CheckCircle size={14} className="text-primary-blue fill-primary-blue/20" />}
+                  {user?.isTrainerVerified && <CheckCircle size={14} className="text-primary-blue fill-primary-blue/20" />}
                 </h3>
                 <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-4">Professional Trainer</p>
                 <Link to="/profile/me">

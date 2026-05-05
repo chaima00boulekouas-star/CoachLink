@@ -51,6 +51,16 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    isSubscribed: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    isTrainerVerified: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
     verificationToken: String,
   },
   { timestamps: true }

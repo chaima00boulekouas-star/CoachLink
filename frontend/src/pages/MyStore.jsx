@@ -142,8 +142,8 @@ const MyStore = () => {
       {/* Status Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 bg-white dark:bg-dark-card rounded-xl px-4 py-3 border border-slate-100 dark:border-dark-border shadow-sm">
         <div className="flex flex-wrap items-center gap-4">
-            {store ? (
-              <>
+            {(store || authUser?.isSubscribed) ? (
+              <React.Fragment>
                 <div className="flex items-center gap-1.5 text-xs font-semibold text-green-600 dark:text-green-400">
                   <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
                   Store Active
@@ -151,13 +151,13 @@ const MyStore = () => {
                 <div className="flex items-center gap-1.5 text-xs font-semibold text-green-600 dark:text-green-400">
                   <CheckCircle size={13} />
                   <span className="hidden sm:inline">Subscription</span>
-                  {store.subscriptionExpiresAt ? (
+                  {store?.subscriptionExpiresAt ? (
                     <span> · Next billing: {new Date(store.subscriptionExpiresAt).toLocaleDateString()}</span>
                   ) : (
                     <span> · Active</span>
                   )}
                 </div>
-              </>
+              </React.Fragment>
             ) : (
               <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400">
                 <XCircle size={13} />

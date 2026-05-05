@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Star, Send, Heart } from 'lucide-react';
+import { Search, Star, Send, Heart, CheckCircle } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 import { useNavigate, Link } from 'react-router-dom';
 import { trainerService, chatService, favoriteService } from '../api/dataService';
@@ -262,7 +262,10 @@ const CoachesPage = () => {
                     </div>
                   </div>
                   <div className="p-5">
-                    <h3 className="font-bold text-lg text-slate-900 dark:text-white leading-tight">{coach.name}</h3>
+                    <h3 className="font-bold text-lg text-slate-900 dark:text-white leading-tight flex items-center gap-1.5">
+                      {coach.name}
+                      {coach.isTrainerVerified && <CheckCircle size={14} className="text-blue-500 fill-blue-500/10" />}
+                    </h3>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 mb-3">{coach.type || coach.sport}</p>
                     <div className="flex flex-wrap gap-1.5 mb-4">
                       {(coach.tags || coach.sports || []).map((tag) => (

@@ -52,7 +52,8 @@ const CoachProfile = () => {
           location: p.location || 'Online',
           experience: p.experience || 'N/A',
           specialization: p.specialization,
-          price: p.price
+          price: p.price,
+          isTrainerVerified: p.user?.isTrainerVerified || false
         });
         
         setProducts(productsRes.products || []);
@@ -177,7 +178,10 @@ const CoachProfile = () => {
               <div className="inline-flex items-center gap-1.5 bg-indigo-500/20 text-indigo-300 text-xs font-bold px-3 py-1 rounded-full mb-4">
                 {coach.sport} Trainer
               </div>
-              <h1 className="text-4xl font-black mb-3">{coach.name}</h1>
+              <h1 className="text-4xl font-black mb-3 flex items-center gap-2">
+                {coach.name}
+                {coach.isTrainerVerified && <Check size={24} className="bg-blue-500 text-white rounded-full p-1 shadow-lg shadow-blue-500/40" />}
+              </h1>
               <div className="flex items-center gap-4 mb-4">
                 <div className="flex items-center gap-1.5">
                   <Star size={16} className="fill-amber-400 text-amber-400" />
