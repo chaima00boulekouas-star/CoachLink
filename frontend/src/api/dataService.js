@@ -255,6 +255,22 @@ export const orderService = {
     const res = await api.get('/api/orders/recent', { params: { limit } });
     return res.data;
   },
+
+  // Create a new order
+  create: async (orderData) => {
+    const res = await api.post('/api/orders', orderData);
+    return res.data;
+  },
+};
+
+// ── Payments API Service ──────────────────────────────────────────────────
+
+export const paymentService = {
+  // Create a checkout session (Chargily)
+  createCheckout: async (orderId) => {
+    const res = await api.post('/api/payments/create-checkout', { orderId });
+    return res.data;
+  },
 };
 
 // ── Cart API Service ──────────────────────────────────────────────────────

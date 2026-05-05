@@ -15,6 +15,7 @@ import notificationRoutes from "./NotificationRoutes.js";
 import adminRoutes from "./AdminRoutes.js";
 import reportRoutes from "./ReportRoutes.js";
 import feedbackRoutes from "./FeedbackRoutes.js";
+import cartRoutes from "./CartRoutes.js";
 
 const router = express.Router();
 
@@ -35,5 +36,6 @@ router.use("/api/notifications", notificationRoutes);
 router.use("/api/admin", adminRoutes);
 router.use("/api/reports", reportRoutes);
 router.use("/api/feedback", feedbackRoutes);
+router.use("/api/cart", cartRoutes);
 
 export default router;

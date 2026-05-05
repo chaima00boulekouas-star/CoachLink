@@ -19,7 +19,7 @@ export const createOrder = async (req, res) => {
     let calculatedTotalPrice = 0;
     const itemsToSave = [];
 
-    // Loop through each item in the cart to verify its real, untampered price
+    // Loop through each item in the cart to verify its real, untampered price and stock availability
     for (let i = 0; i < orderItems.length; i++) {
       const item = orderItems[i];
       
@@ -30,6 +30,17 @@ export const createOrder = async (req, res) => {
         return res.status(404).json({ message: `Product not found: ${item.product}` });
       }
 
+      // Check stock availability (only for products that have stock management enabled)
+      // If type is "physical", stock check is mandatory.
+      // If type is "program" or "digital", stock might be infinite (0 but not relevant)
+      if (dbProduct.type === "physical") {
+        if (dbProduct.stock < item.quantity) {
+          return res.status(400).json({ 
+            message: `Insufficient stock for ${dbProduct.title}. Available: ${dbProduct.stock}, Requested: ${item.quantity}` 
+          });
+        }
+      }
+      
       // Calculate the total for this specific item: (DB Price * Requested Quantity)
       const itemTotal = dbProduct.price * item.quantity;
       calculatedTotalPrice += itemTotal;

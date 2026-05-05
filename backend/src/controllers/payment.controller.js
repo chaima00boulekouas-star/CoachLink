@@ -2,6 +2,9 @@ import { ChargilyClient } from "@chargily/chargily-pay";
 import crypto from "crypto";
 import Order from "../Models/Order.Model.js"; 
 import Payment from "../Models/Payment.Model.js";
+import Product from "../Models/Product.Model.js";
+import Notification from "../Models/Notification.Model.js";
+import Cart from "../Models/Cart.Model.js";
 
 // 1. Initialize Chargily Client using your Secret Key from .env
 const client = new ChargilyClient({
@@ -105,17 +108,50 @@ export const webhookReceiver = async (req, res) => {
       const orderId = checkout.metadata.order_id;
 
       // The user successfully paid! Update the Order and Payment in Database
-      await Order.findByIdAndUpdate(orderId, {
-        status: "paid",
-        paymentStatus: "paid",
-      });
+      const order = await Order.findById(orderId);
+      if (order) {
+        order.status = "paid";
+        order.paymentStatus = "paid";
+        await order.save();
+
+        // --- NEW Logic: Update Stock and Notify Trainers ---
+        for (const item of order.items) {
+          // 1. Decrement Stock for physical products
+          if (item.product) {
+            const product = await Product.findById(item.product);
+            if (product && product.type === "physical") {
+              product.stock = Math.max(0, product.stock - item.quantity);
+              await product.save();
+            }
+          }
+
+          // 2. Create Notification for the Trainer
+          if (item.trainer) {
+            await Notification.create({
+              recipient: item.trainer,
+              sender: order.user,
+              type: "order",
+              title: "New Product Sale!",
+              message: `You sold ${item.quantity}x "${item.title}". Earnings: $${item.price * item.quantity}`,
+              relatedId: order._id,
+              relatedModel: "Order"
+            });
+          }
+        }
+
+        // 3. Clear the User's Cart
+        const userId = checkout.metadata.user_id;
+        if (userId) {
+          await Cart.findOneAndUpdate({ user: userId }, { items: [] });
+        }
+      }
 
       await Payment.findOneAndUpdate(
         { chargilyId: checkout.id },
         { status: "paid" }
       );
 
-      console.log(`✅ SUCCESS: Order ${orderId} has been paid!`);
+      console.log(`✅ SUCCESS: Order ${orderId} has been paid and stock updated!`);
     } 
     else if (event.type === "checkout.failed" || event.type === "checkout.canceled") {
       const checkout = event.data;

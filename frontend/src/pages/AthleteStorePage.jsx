@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ShoppingBag, Star, Plus, Minus, Trash2, ShoppingCart } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
-import { productService } from '../api/dataService';
+import { productService, cartService } from '../api/dataService';
 import { getImageUrl, FALLBACK_PRODUCT_IMAGE } from '../utils/imageUrl';
+import { toast } from 'react-hot-toast';
 
 const TAG_COLORS = {
   'Best Seller': 'bg-amber-500',
@@ -30,26 +31,51 @@ const AthleteStorePage = () => {
         setIsLoading(false);
       }
     };
+
+    const fetchCart = async () => {
+      try {
+        const data = await cartService.getCart();
+        setCart(data.items || []);
+      } catch (error) {
+        console.error('Failed to fetch cart:', error);
+      }
+    };
+
     fetchProducts();
+    fetchCart();
   }, []);
 
   const sports   = ['All', ...Array.from(new Set(products.map((p) => p.category?.name || p.category || 'General')))];
   const filtered = sport === 'All' ? products : products.filter((p) => (p.category?.name || p.category || 'General') === sport);
   const total    = cart.reduce((s, i) => s + i.price * i.qty, 0);
 
-  const addToCart = (product) => {
-    setCart((prev) => {
-      const existing = prev.find((i) => i._id === product._id);
-      if (existing) return prev.map((i) => i._id === product._id ? { ...i, qty: i.qty + 1 } : i);
-      return [...prev, { ...product, qty: 1 }];
-    });
+  const addToCart = async (product) => {
+    try {
+      await cartService.addItem(product._id, 1);
+      const data = await cartService.getCart();
+      setCart(data.items || []);
+      toast.success(`${product.title} added to cart!`);
+    } catch (err) {
+      toast.error("Failed to add to cart");
+    }
   };
 
-  const changeQty = (id, delta) => {
-    setCart((prev) => prev
-      .map((i) => i._id === id ? { ...i, qty: i.qty + delta } : i)
-      .filter((i) => i.qty > 0)
-    );
+  const changeQty = async (id, delta) => {
+    const item = cart.find(i => (i._id || i.id) === id);
+    if (!item) return;
+
+    try {
+      const newQty = item.qty + delta;
+      if (newQty <= 0) {
+        await cartService.removeItem(id);
+      } else {
+        await cartService.updateQuantity(id, newQty);
+      }
+      const data = await cartService.getCart();
+      setCart(data.items || []);
+    } catch (err) {
+      toast.error("Failed to update cart");
+    }
   };
 
   const cartCount = cart.reduce((s, i) => s + i.qty, 0);
