@@ -19,6 +19,7 @@ router.post("/favorites/:athleteId", protect, isTrainer, toggleFavorite);
 
 // public
 router.get("/", getAllTrainers);
+router.get("/me", protect, getCoachProfile);
 router.get("/:id", getCoachProfile);
 
 // protected (trainer only)

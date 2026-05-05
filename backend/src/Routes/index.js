@@ -12,6 +12,9 @@ import userRoutes from "./UserRoutes.js";
 import chatRoutes from "./ChatRoutes.js";
 import requestRoutes from "./RequestRoutes.js";
 import notificationRoutes from "./NotificationRoutes.js";
+import adminRoutes from "./AdminRoutes.js";
+import reportRoutes from "./ReportRoutes.js";
+import feedbackRoutes from "./FeedbackRoutes.js";
 
 const router = express.Router();
 
@@ -29,5 +32,8 @@ router.use("/api/users", userRoutes);
 router.use("/api/chat", chatRoutes);
 router.use("/api/requests", requestRoutes);
 router.use("/api/notifications", notificationRoutes);
+router.use("/api/admin", adminRoutes);
+router.use("/api/reports", reportRoutes);
+router.use("/api/feedback", feedbackRoutes);
 
 export default router;

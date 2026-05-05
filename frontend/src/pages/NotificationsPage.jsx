@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Bell, Check, CheckCheck, ShoppingBag, Calendar, UserPlus, UserCheck, UserX, Star, Trash2, MessageCircle } from 'lucide-react';
+import { Bell, Check, CheckCheck, ShoppingBag, Calendar, UserPlus, UserCheck, UserX, Star, Trash2, MessageCircle, MessageSquare } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
@@ -16,6 +16,7 @@ const notificationTypes = {
   review:           { icon: Star,      color: 'bg-amber-100 dark:bg-amber-900/20 text-amber-500' },
   system:           { icon: Bell,      color: 'bg-slate-100 dark:bg-dark-border text-slate-500' },
   message:          { icon: MessageCircle, color: 'bg-blue-100 dark:bg-blue-900/20 text-blue-500' },
+  feedback:         { icon: MessageSquare, color: 'bg-purple-100 dark:bg-purple-900/20 text-purple-600' },
 };
 
 const timeAgo = (dateStr) => {

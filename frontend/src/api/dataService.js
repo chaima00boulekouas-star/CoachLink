@@ -21,6 +21,12 @@ export const trainerService = {
     const res = await api.get(`/api/trainer-profiles/${id}`);
     return res.data;
   },
+  
+  // Get current trainer profile
+  getProfile: async () => {
+    const res = await api.get('/api/trainer-profiles/me');
+    return res.data;
+  },
 
   // Get trainer's store products
   getProducts: async (trainerId) => {
@@ -296,7 +302,7 @@ export const notificationService = {
 
   // Mark all as read
   markAllRead: async () => {
-    const res = await api.put('/api/notifications/read-all');
+    const res = await api.put('/api/notifications/mark-all-read');
     return res.data;
   },
 
@@ -363,8 +369,8 @@ export const settingsService = {
 
 export const adminService = {
   // Get dashboard stats
-  getDashboard: async () => {
-    const res = await api.get('/api/admin/dashboard');
+  getStats: async () => {
+    const res = await api.get('/api/admin/stats');
     return res.data;
   },
 
@@ -374,15 +380,81 @@ export const adminService = {
     return res.data;
   },
 
-  // Ban/unban user
-  toggleBan: async (userId) => {
-    const res = await api.put(`/api/admin/users/${userId}/toggle-ban`);
+  // Update user status
+  updateUserStatus: async (userId, status) => {
+    const res = await api.put(`/api/admin/users/${userId}/status`, { status });
     return res.data;
   },
 
   // Get reports
   getReports: async () => {
     const res = await api.get('/api/admin/reports');
+    return res.data;
+  },
+
+  // Update report status
+  updateReportStatus: async (id, status) => {
+    const res = await api.put(`/api/admin/reports/${id}`, { status });
+    return res.data;
+  },
+
+  // Get feedback
+  getFeedback: async () => {
+    const res = await api.get('/api/admin/feedback');
+    return res.data;
+  },
+
+  // Reply to feedback
+  replyFeedback: async (id, reply) => {
+    const res = await api.post(`/api/admin/feedback/${id}/reply`, { reply });
+    return res.data;
+  },
+
+  // Get all products
+  getProducts: async () => {
+    const res = await api.get('/api/admin/products');
+    return res.data;
+  },
+};
+
+// ── Feedback API Service ──────────────────────────────────────────────────
+
+export const feedbackService = {
+  // Submit feedback
+  submit: async (data) => {
+    const res = await api.post('/api/feedback', data);
+    return res.data;
+  },
+
+  // Get my feedback history
+  getMyHistory: async () => {
+    const res = await api.get('/api/feedback/me');
+    return res.data;
+  },
+};
+
+// ── Report API Service ────────────────────────────────────────────────────
+
+export const reportService = {
+  // Submit a report
+  submit: async (reportedUserId, reason) => {
+    const res = await api.post('/api/reports', { reportedUserId, reason });
+    return res.data;
+  },
+};
+
+// ── Review API Service ────────────────────────────────────────────────────
+
+export const reviewService = {
+  // Get reviews for a trainer
+  getTrainerReviews: async (trainerId) => {
+    const res = await api.get(`/api/reviews/coach/${trainerId}`);
+    return res.data;
+  },
+
+  // Create a review
+  create: async (trainerId, data) => {
+    const res = await api.post(`/api/reviews/coach/${trainerId}`, data);
     return res.data;
   },
 };
@@ -421,18 +493,3 @@ export const chatService = {
   },
 };
 
-// ── Review API Service ────────────────────────────────────────────────────
-
-export const reviewService = {
-  // Create a review for a coach
-  create: async (coachId, data) => {
-    const res = await api.post(`/api/reviews/coach/${coachId}`, data);
-    return res.data;
-  },
-
-  // Get all reviews for a coach
-  getCoachReviews: async (coachId) => {
-    const res = await api.get(`/api/reviews/coach/${coachId}`);
-    return res.data;
-  },
-};

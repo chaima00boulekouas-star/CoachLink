@@ -35,9 +35,10 @@ const userSchema = new mongoose.Schema(
 
     avatar: String,
 
-    isBanned: {
-      type: Boolean,
-      default: false,
+    status: {
+      type: String,
+      enum: ["active", "suspended", "banned"],
+      default: "active",
       index: true,
     },
 
@@ -55,6 +56,6 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-userSchema.index({ role: 1, isBanned: 1 });
+userSchema.index({ role: 1, status: 1 });
 
 export default mongoose.model("User", userSchema);
