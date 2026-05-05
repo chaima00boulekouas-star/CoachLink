@@ -23,8 +23,14 @@ const AdminAthletes = () => {
     setLoading(true);
     try {
       const data = await adminService.getUsers({ role: 'athlete', status: filter });
-      setAthletes(data);
+      if (Array.isArray(data)) {
+        setAthletes(data);
+      } else {
+        console.error("Unexpected data format for athletes:", data);
+        setAthletes([]);
+      }
     } catch (err) {
+      console.error("Fetch athletes error:", err);
       toast.error("Failed to load athletes");
     } finally {
       setLoading(false);

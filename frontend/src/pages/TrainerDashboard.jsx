@@ -127,7 +127,14 @@ const TrainerDashboard = () => {
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div>
                 <p className="text-sm text-slate-500 dark:text-slate-400 mb-0.5">Welcome back 👋</p>
-                <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{userName}</h1>
+                <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+                  {userName}
+                  {user?.isVerified && (
+                    <span title="Verified Professional" className="bg-primary-blue/10 p-1 rounded-full">
+                      <CheckCircle size={20} className="text-primary-blue fill-primary-blue/20" />
+                    </span>
+                  )}
+                </h1>
               </div>
               <div className="text-right">
                 <p className="hidden sm:block text-sm text-slate-500 dark:text-slate-400">{today}</p>
@@ -347,7 +354,10 @@ const TrainerDashboard = () => {
                   )}
                   <div className="absolute bottom-1 right-1 w-4 h-4 bg-green-500 border-2 border-white dark:border-dark-card rounded-full shadow-sm" />
                 </div>
-                <h3 className="font-black text-slate-900 dark:text-white text-base mb-0.5">{userName}</h3>
+                <h3 className="font-black text-slate-900 dark:text-white text-base mb-0.5 flex items-center justify-center gap-1.5">
+                  {userName}
+                  {user?.isVerified && <CheckCircle size={14} className="text-primary-blue fill-primary-blue/20" />}
+                </h3>
                 <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-4">Professional Trainer</p>
                 <Link to="/profile/me">
                   <button className="w-full bg-primary-orange text-white text-sm font-bold py-3 rounded-2xl shadow-lg shadow-orange-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all">

@@ -24,8 +24,14 @@ const AdminTrainers = () => {
     setLoading(true);
     try {
       const data = await adminService.getUsers({ role: 'trainer', status: filter });
-      setTrainers(data);
+      if (Array.isArray(data)) {
+        setTrainers(data);
+      } else {
+        console.error("Unexpected data format for trainers:", data);
+        setTrainers([]);
+      }
     } catch (err) {
+      console.error("Fetch trainers error:", err);
       toast.error("Failed to load trainers");
     } finally {
       setLoading(false);

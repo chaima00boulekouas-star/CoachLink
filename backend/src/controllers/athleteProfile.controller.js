@@ -62,7 +62,7 @@ export const getFavorites = async (req, res) => {
         ...uObj,
         sport: tp.sports?.[0] || tp.specialization || 'Fitness',
         sports: tp.sports || [],
-        rating: tp.ratingAvg || 5.0,
+        rating: tp.ratingAvg || 0,
         location: tp.location || 'Online',
         experience: tp.experience,
       };

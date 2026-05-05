@@ -32,8 +32,14 @@ const AdminFeedback = () => {
     setLoading(true);
     try {
       const data = await adminService.getFeedback();
-      setFeedback(data);
+      if (Array.isArray(data)) {
+        setFeedback(data);
+      } else {
+        console.error("Unexpected data format for feedback:", data);
+        setFeedback([]);
+      }
     } catch (err) {
+      console.error("Fetch feedback error:", err);
       toast.error("Failed to load feedback");
     } finally {
       setLoading(false);

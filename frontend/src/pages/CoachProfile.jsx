@@ -36,7 +36,7 @@ const CoachProfile = () => {
         const [profileRes, productsRes, reviewsRes] = await Promise.all([
           trainerService.getById(id),
           productService.getAll({ trainerId: id }),
-          reviewService.getCoachReviews(id)
+          reviewService.getTrainerReviews(id)
         ]);
         
         const p = profileRes.profile;

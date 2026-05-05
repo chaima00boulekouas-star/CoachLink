@@ -6,6 +6,7 @@ import CoachingRequest from "../Models/CoachingRequest.Model.js";
 import AthleteProfile from "../Models/AthleteProfile.Model.js";
 import TrainerProfile from "../Models/TrainerProfile.Model.js";
 import Session from "../Models/Session.Model.js";
+import Notification from "../Models/Notification.Model.js";
 
 // @desc    Get platform stats
 // @route   GET /api/admin/stats
@@ -29,7 +30,8 @@ export const getAdminStats = async (req, res) => {
 
     res.json({ stats });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error("Get admin stats error:", err);
+    res.status(500).json({ message: "Failed to fetch platform stats", error: err.message });
   }
 };
 
@@ -55,20 +57,32 @@ export const getAllUsers = async (req, res) => {
 
     // Map role-specific data if needed
     const enrichedUsers = await Promise.all(users.map(async (u) => {
-      let extra = {};
-      if (u.role === 'athlete') {
-        const profile = await AthleteProfile.findOne({ user: u._id });
-        extra = { sport: profile?.sports?.[0] || 'N/A', sessions: 0 }; // sessions can be added later
-      } else if (u.role === 'trainer') {
-        const profile = await TrainerProfile.findOne({ user: u._id });
-        extra = { sport: profile?.specialization || profile?.sports?.[0] || 'N/A', rating: profile?.rating || 5.0 };
+      try {
+        let extra = {};
+        const uObj = u.toObject ? u.toObject() : u;
+
+        if (u.role === 'athlete') {
+          const profile = await AthleteProfile.findOne({ user: u._id }).lean();
+          extra = { sport: profile?.sports?.[0] || 'N/A', sessions: 0 };
+        } else if (u.role === 'trainer') {
+          const profile = await TrainerProfile.findOne({ user: u._id }).lean();
+          extra = { 
+            sport: profile?.specialization || profile?.sports?.[0] || 'N/A', 
+            rating: profile?.ratingAvg || 0,
+            ratingCount: profile?.ratingCount || 0
+          };
+        }
+        return { ...uObj, ...extra };
+      } catch (e) {
+        console.error(`Error enriching user ${u._id}:`, e);
+        return u.toObject ? u.toObject() : u;
       }
-      return { ...u.toObject(), ...extra };
     }));
 
     res.json(enrichedUsers);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error("Get all users error:", err);
+    res.status(500).json({ message: "Failed to fetch users", error: err.message });
   }
 };
 
@@ -147,6 +161,18 @@ export const replyFeedback = async (req, res) => {
     feedback.reply = reply;
     feedback.status = "resolved";
     await feedback.save();
+
+    // Create notification for the user
+    await Notification.create({
+      recipient: feedback.user,
+      sender: req.user._id,
+      type: "feedback",
+      title: "Feedback Replied",
+      message: `An admin has replied to your feedback: "${reply.substring(0, 50)}${reply.length > 50 ? '...' : ''}"`,
+      relatedId: feedback._id,
+      relatedModel: "Feedback"
+    });
+
     res.json({ message: "Reply sent and feedback resolved", feedback });
   } catch (err) {
     res.status(500).json({ message: err.message });

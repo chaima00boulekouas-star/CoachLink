@@ -24,8 +24,14 @@ const AdminReports = () => {
     setLoading(true);
     try {
       const data = await adminService.getReports();
-      setReports(data);
+      if (Array.isArray(data)) {
+        setReports(data);
+      } else {
+        console.error("Unexpected data format for reports:", data);
+        setReports([]);
+      }
     } catch (err) {
+      console.error("Fetch reports error:", err);
       toast.error("Failed to load reports");
     } finally {
       setLoading(false);

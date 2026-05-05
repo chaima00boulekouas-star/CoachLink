@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, MessageCircle, Trophy, Heart, Loader2, MapPin, Target, UserPlus } from 'lucide-react';
+import { Search, MessageCircle, Trophy, Heart, Loader2, MapPin, Target, UserPlus, Flag } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 import { Link, useNavigate } from 'react-router-dom';
 import { favoritesService, chatService, requestService } from '../api/dataService';
 import { toast } from 'react-hot-toast';
 import api from '../api/axios';
+import ReportModal from '../components/ReportModal';
+import { getImageUrl } from '../utils/imageUrl';
 
 const COLORS = ['bg-blue-500', 'bg-pink-500', 'bg-green-500', 'bg-orange-500', 'bg-purple-500', 'bg-indigo-500', 'bg-teal-500'];
 
@@ -14,6 +16,8 @@ const AthletesPage = () => {
   const [athletes, setAthletes] = useState([]);
   const [favoriteIds, setFavoriteIds] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [selectedAthlete, setSelectedAthlete] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -152,7 +156,7 @@ const AthletesPage = () => {
                     <div className="flex items-start gap-4 mb-4">
                       {a.avatar ? (
                         <img
-                          src={a.avatar.startsWith('http') ? a.avatar : `http://localhost:5000/${a.avatar}`}
+                          src={getImageUrl(a.avatar)}
                           alt={a.name}
                           className="w-12 h-12 rounded-xl object-cover flex-shrink-0"
                         />
@@ -172,17 +176,29 @@ const AthletesPage = () => {
                               </p>
                             )}
                           </div>
-                          <button
-                            onClick={() => toggleFavorite(a._id)}
-                            className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
-                              isFav
-                                ? 'text-red-500 bg-red-50 dark:bg-red-900/20 hover:bg-red-100'
-                                : 'text-slate-300 dark:text-slate-600 bg-slate-50 dark:bg-white/5 hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10'
-                            }`}
-                            title={isFav ? 'Remove from favorites' : 'Add to favorites'}
-                          >
-                            <Heart size={15} className={isFav ? 'fill-current' : ''} />
-                          </button>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={() => {
+                                setSelectedAthlete(a);
+                                setReportModalOpen(true);
+                              }}
+                              className="w-8 h-8 rounded-full flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
+                              title="Report User"
+                            >
+                              <Flag size={14} />
+                            </button>
+                            <button
+                              onClick={() => toggleFavorite(a._id)}
+                              className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+                                isFav
+                                  ? 'text-red-500 bg-red-50 dark:bg-red-900/20 hover:bg-red-100'
+                                  : 'text-slate-300 dark:text-slate-600 bg-slate-50 dark:bg-white/5 hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10'
+                              }`}
+                              title={isFav ? 'Remove from favorites' : 'Add to favorites'}
+                            >
+                              <Heart size={15} className={isFav ? 'fill-current' : ''} />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -254,6 +270,15 @@ const AthletesPage = () => {
           </div>
         )}
       </div>
+
+      {selectedAthlete && (
+        <ReportModal
+          isOpen={reportModalOpen}
+          onClose={() => setReportModalOpen(false)}
+          reportedUserId={selectedAthlete._id}
+          reportedUserName={selectedAthlete.name}
+        />
+      )}
     </DashboardLayout>
   );
 };

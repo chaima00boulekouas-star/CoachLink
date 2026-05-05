@@ -49,13 +49,15 @@ export const getAllTrainers = async (req, res) => {
       id: profile.user?._id,
       name: profile.user?.name || 'Anonymous Coach',
       image: profile.user?.avatar ? `http://localhost:5000${profile.user.avatar}` : 'https://images.unsplash.com/photo-1594381898411-846e7d193883?auto=format&fit=crop&q=80&w=200',
-      rating: profile.ratingAvg || 5.0,
+      rating: profile.ratingAvg || 0,
+      ratingCount: profile.ratingCount || 0,
       sport: profile.sports?.[0] || profile.specialization || 'Fitness',
       sports: profile.sports || [],
       location: profile.location || 'Online',
       price: profile.price,
       experience: profile.experience,
-      specialization: profile.specialization
+      specialization: profile.specialization,
+      isVerified: profile.isVerified || false
     }));
 
     res.status(200).json({ trainers: formattedTrainers });
@@ -124,7 +126,17 @@ export const manageCoachProfile = async (req, res) => {
 // @access  Public
 export const getCoachProfile = async (req, res) => {
   try {
-    const profile = await TrainerProfile.findOne({ user: req.params.id }).populate('user', 'name email avatar');
+    let targetId = req.params.id;
+    
+    // Handle 'me' for authenticated trainer (either via param or explicit /me route)
+    if (targetId === 'me' || !targetId) {
+      if (!req.user) {
+        return res.status(401).json({ message: "Not authorized to view profile" });
+      }
+      targetId = req.user.id;
+    }
+
+    const profile = await TrainerProfile.findOne({ user: targetId }).populate('user', 'name email avatar');
     
     if (!profile) {
       return res.status(404).json({ message: "Trainer profile not found" });

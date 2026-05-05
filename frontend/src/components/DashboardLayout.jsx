@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, MessageSquare } from 'lucide-react';
 import DashboardSidebar from './DashboardSidebar';
 import DashboardTopbar from './DashboardTopbar';
+import FeedbackModal from './FeedbackModal';
 
 const DashboardLayout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -14,9 +16,13 @@ const DashboardLayout = ({ children }) => {
   const showBackButton = !hideBackButtonPaths.includes(location.pathname);
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-dark-bg">
+    <div className="min-h-screen bg-slate-50 dark:bg-dark-bg relative">
       <DashboardTopbar onToggleSidebar={() => setSidebarOpen(prev => !prev)} />
-      <DashboardSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <DashboardSidebar 
+        isOpen={sidebarOpen} 
+        onClose={() => setSidebarOpen(false)} 
+        onOpenFeedback={() => setFeedbackOpen(true)}
+      />
 
       <main className="pt-[60px] min-h-screen">
         <div className="p-3 sm:p-5 lg:p-6 max-w-7xl mx-auto">
@@ -34,6 +40,19 @@ const DashboardLayout = ({ children }) => {
           {children}
         </div>
       </main>
+
+      {/* Floating Feedback Button */}
+      <button 
+        onClick={() => setFeedbackOpen(true)}
+        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2.5 rounded-2xl shadow-xl hover:scale-105 active:scale-95 transition-all group"
+      >
+        <div className="w-8 h-8 rounded-xl bg-primary-blue/10 text-primary-blue flex items-center justify-center group-hover:bg-primary-blue group-hover:text-white transition-colors">
+          <MessageSquare size={16} />
+        </div>
+        <span className="text-xs font-bold text-slate-600 dark:text-slate-300">Feedback</span>
+      </button>
+
+      <FeedbackModal isOpen={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
     </div>
   );
 };

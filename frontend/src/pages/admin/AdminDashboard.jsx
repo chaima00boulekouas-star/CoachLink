@@ -56,14 +56,33 @@ const AdminDashboard = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [sData, rData, uData] = await Promise.all([
-        adminService.getStats(),
-        adminService.getReports(),
-        adminService.getUsers({ limit: 5 })
-      ]);
-      setStats(sData.stats || []);
-      setReports(rData.slice(0, 5) || []);
-      setUsers(uData.slice(0, 5) || []);
+      // Fetch stats
+      try {
+        const sData = await adminService.getStats();
+        setStats(sData.stats || []);
+      } catch (err) {
+        console.error("Stats fetch error:", err);
+      }
+
+      // Fetch reports
+      try {
+        const rData = await adminService.getReports();
+        if (Array.isArray(rData)) {
+          setReports(rData.slice(0, 5));
+        }
+      } catch (err) {
+        console.error("Reports fetch error:", err);
+      }
+
+      // Fetch users
+      try {
+        const uData = await adminService.getUsers({ limit: 5 });
+        if (Array.isArray(uData)) {
+          setUsers(uData.slice(0, 5));
+        }
+      } catch (err) {
+        console.error("Users fetch error:", err);
+      }
     } catch (err) {
       toast.error("Failed to fetch dashboard data");
     } finally {

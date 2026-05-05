@@ -18,8 +18,14 @@ const AdminProducts = () => {
     setLoading(true);
     try {
       const data = await adminService.getProducts();
-      setProducts(data);
+      if (Array.isArray(data)) {
+        setProducts(data);
+      } else {
+        console.error("Unexpected data format for products:", data);
+        setProducts([]);
+      }
     } catch (err) {
+      console.error("Fetch products error:", err);
       toast.error("Failed to load products");
     } finally {
       setLoading(false);

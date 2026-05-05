@@ -33,6 +33,14 @@ export const protect = async (req, res, next) => {
       });
     }
 
+    // Check account status
+    if (user.status !== 'active') {
+      const msg = user.status === 'banned' 
+        ? 'Your account has been banned. Please contact support.' 
+        : 'Your account has been suspended. Please contact support.';
+      return res.status(403).json({ message: msg });
+    }
+
     // attach user to request
     req.user = user;
 
