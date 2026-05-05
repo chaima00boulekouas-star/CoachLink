@@ -48,6 +48,37 @@ const AdminTrainers = () => {
     }
   };
 
+  const toggleVerification = async (id) => {
+    try {
+      await adminService.verifyTrainer(id);
+      toast.success("Trainer verification status updated");
+      fetchTrainers();
+    } catch (err) {
+      toast.error("Failed to update verification status");
+    }
+  };
+
+  const toggleSubscription = async (id) => {
+    try {
+      await adminService.toggleUserSubscription(id);
+      toast.success("Subscription status updated");
+      fetchTrainers();
+    } catch (err) {
+      toast.error("Failed to update subscription status");
+    }
+  };
+
+  const handleBulkVerify = async () => {
+    if (!window.confirm("This will mark ALL existing trainers as verified and subscribed. Continue?")) return;
+    try {
+      const res = await adminService.bulkVerifyTrainers();
+      toast.success(res.message || "Bulk update completed");
+      fetchTrainers();
+    } catch (err) {
+      toast.error("Bulk update failed");
+    }
+  };
+
   const filtered = trainers.filter(t => 
     t.name?.toLowerCase().includes(search.toLowerCase()) ||
     t.specialization?.toLowerCase().includes(search.toLowerCase())
@@ -55,17 +86,25 @@ const AdminTrainers = () => {
 
   return (
     <AdminLayout>
-      <div className="max-w-6xl mx-auto space-y-6">
+      <div className="max-w-7xl mx-auto space-y-6">
         
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-black text-slate-900 dark:text-white">Trainers</h1>
             <p className="text-slate-500 dark:text-slate-400 mt-1">{trainers.length} registered trainers on the platform</p>
           </div>
-          <div className="flex items-center gap-4 text-xs font-bold">
-            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-green-500"/> Active</span>
-            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-500"/> Suspended</span>
-            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-500"/> Banned</span>
+          <div className="flex flex-wrap items-center gap-4">
+            <button 
+              onClick={handleBulkVerify}
+              className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-black shadow-lg shadow-indigo-500/20 hover:opacity-90 transition-opacity"
+            >
+              Verify All Existing
+            </button>
+            <div className="flex items-center gap-3 text-[10px] font-bold text-slate-400 border-l border-slate-200 dark:border-slate-700 pl-4 uppercase tracking-widest">
+              <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-green-500"/> Active</span>
+              <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-amber-500"/> Suspended</span>
+              <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-red-500"/> Banned</span>
+            </div>
           </div>
         </div>
 
@@ -103,7 +142,7 @@ const AdminTrainers = () => {
               <table className="w-full">
                 <thead>
                   <tr className="bg-slate-50 dark:bg-slate-700/30 border-b border-slate-100 dark:border-slate-700">
-                    {['Trainer','Sport','Rating','Joined','Status','Actions'].map(h => (
+                    {['Trainer','Sport','Subscription','Verification','Status','Actions'].map(h => (
                       <th key={h} className="text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider px-6 py-4">{h}</th>
                     ))}
                   </tr>
@@ -120,19 +159,54 @@ const AdminTrainers = () => {
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
                             <div className="w-9 h-9 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 flex items-center justify-center text-xs font-black uppercase">
-                              {t.name?.charAt(0)}
+                              {t.avatar ? <img src={t.avatar} className="w-full h-full rounded-full object-cover"/> : t.name?.charAt(0)}
                             </div>
-                            <span className="text-sm font-bold text-slate-900 dark:text-white">{t.name}</span>
+                            <div className="flex flex-col">
+                              <span className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                                {t.name}
+                                {t.isTrainerVerified && (
+                                  <span title="Verified Professional" className="bg-blue-500 text-white rounded-full p-0.5 shadow-sm">
+                                    <CheckCircle size={10} className="fill-white text-blue-500" />
+                                  </span>
+                                )}
+                              </span>
+                              <span className="text-[10px] text-slate-400">{t.email}</span>
+                            </div>
                           </div>
                         </td>
                         <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">{t.sport || 'N/A'}</td>
                         <td className="px-6 py-4">
-                          <div className="flex items-center gap-1">
-                            <span className="text-amber-400">★</span>
-                            <span className="text-sm font-bold text-slate-900 dark:text-white">{t.rating?.toFixed(1) || '5.0'}</span>
-                          </div>
+                          <button 
+                            onClick={() => toggleSubscription(t._id)}
+                            className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+                              t.isSubscribed 
+                                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30' 
+                                : 'bg-slate-100 dark:bg-slate-700 text-slate-400 hover:border-indigo-400 border border-transparent'
+                            }`}
+                          >
+                            {t.isSubscribed ? (
+                              <React.Fragment><CheckCircle size={12} /> Subscribed</React.Fragment>
+                            ) : (
+                              'No Plan'
+                            )}
+                          </button>
                         </td>
-                        <td className="px-6 py-4 text-xs text-slate-500 dark:text-slate-400">{new Date(t.createdAt).toLocaleDateString()}</td>
+                        <td className="px-6 py-4">
+                          <button 
+                            onClick={() => toggleVerification(t._id)}
+                            className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+                              t.isTrainerVerified 
+                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' 
+                                : 'bg-slate-100 dark:bg-slate-700 text-slate-400 hover:border-blue-400 border border-transparent'
+                            }`}
+                          >
+                            {t.isTrainerVerified ? (
+                              <React.Fragment><CheckCircle size={12} /> Verified</React.Fragment>
+                            ) : (
+                              'Unverified'
+                            )}
+                          </button>
+                        </td>
                         <td className="px-6 py-4">
                           <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold ${cfg.className}`}>
                             <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />

@@ -10,6 +10,14 @@ export const addProduct = async (req, res) => {
     const { title, description, category, format, level, price, type, stock } = req.body;
     const trainerId = req.user.id;
 
+    // Subscription Check
+    if (!req.user.isSubscribed) {
+      return res.status(403).json({ 
+        message: "Subscription required to add products to your store.",
+        requiresSubscription: true
+      });
+    }
+
     if (!title || price === undefined || !type) {
       return res.status(400).json({ message: "Title, price, and type are required." });
     }

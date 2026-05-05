@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Upload, Plus, X, Image } from 'lucide-react';
+import { Upload, Plus, X, Image, Award } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 import Input from '../components/Input';
 import Button from '../components/Button';
 import { useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
 import { productService } from '../api/dataService';
 
@@ -19,6 +20,7 @@ const AddProductPage = () => {
   const [images, setImages] = useState([]);
   const [existingImages, setExistingImages] = useState([]);
   const [error, setError] = useState('');
+  const user = useSelector(state => state.auth.user);
   const [form, setForm] = useState({
     title: '',
     description: '',
@@ -29,6 +31,26 @@ const AddProductPage = () => {
     stock: '',
     badge: '',
   });
+
+  if (user && !user.isSubscribed) {
+    return (
+      <DashboardLayout>
+        <div className="max-w-3xl mx-auto py-20 text-center">
+          <div className="w-20 h-20 bg-indigo-50 dark:bg-indigo-900/20 rounded-3xl flex items-center justify-center mx-auto mb-6 text-indigo-600">
+            <Award size={40} />
+          </div>
+          <h1 className="text-3xl font-black text-slate-900 dark:text-white mb-4">Subscription Required</h1>
+          <p className="text-slate-500 dark:text-slate-400 mb-8 max-w-md mx-auto">
+            You need an active subscription to sell products in your store. Join our premium trainers to start growing your business.
+          </p>
+          <div className="flex justify-center gap-4">
+            <Button variant="orange" onClick={() => navigate('/settings')}>Go to Settings</Button>
+            <Button variant="outline" onClick={() => navigate('/store')}>Back to Store</Button>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   const handleImageChange = (e) => {
     if (e.target.files) {

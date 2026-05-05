@@ -7,7 +7,10 @@ import {
   updateReportStatus, 
   getFeedback, 
   replyFeedback,
-  getAdminProducts
+  getAdminProducts,
+  verifyTrainer,
+  bulkVerifyTrainers,
+  toggleSubscription
 } from "../controllers/admin.controller.js";
 import { protect } from "../middlewares/Auth.Middleware.js";
 import { isAdmin } from "../middlewares/Role.Middleware.js";
@@ -26,5 +29,8 @@ router.put("/reports/:id", updateReportStatus);
 router.get("/feedback", getFeedback);
 router.post("/feedback/:id/reply", replyFeedback);
 router.get("/products", getAdminProducts);
+router.put("/users/:id/verify", verifyTrainer);
+router.put("/users/:id/subscription", toggleSubscription);
+router.post("/bulk-verify-trainers", bulkVerifyTrainers);
 
 export default router;

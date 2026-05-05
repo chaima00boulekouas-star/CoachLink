@@ -31,7 +31,7 @@ export const getAllTrainers = async (req, res) => {
       query.price = { $lte: Number(maxPrice) };
     }
 
-    let trainerProfiles = await TrainerProfile.find(query).populate('user', 'name email avatar');
+    let trainerProfiles = await TrainerProfile.find(query).populate('user', 'name email avatar isTrainerVerified isSubscribed');
 
     // Search by name, specialization, or sport
     if (search) {
@@ -57,7 +57,8 @@ export const getAllTrainers = async (req, res) => {
       price: profile.price,
       experience: profile.experience,
       specialization: profile.specialization,
-      isVerified: profile.isVerified || false
+      isTrainerVerified: profile.user?.isTrainerVerified || false,
+      isSubscribed: profile.user?.isSubscribed || false
     }));
 
     res.status(200).json({ trainers: formattedTrainers });
@@ -136,7 +137,7 @@ export const getCoachProfile = async (req, res) => {
       targetId = req.user.id;
     }
 
-    const profile = await TrainerProfile.findOne({ user: targetId }).populate('user', 'name email avatar');
+    const profile = await TrainerProfile.findOne({ user: targetId }).populate('user', 'name email avatar isTrainerVerified isSubscribed');
     
     if (!profile) {
       return res.status(404).json({ message: "Trainer profile not found" });

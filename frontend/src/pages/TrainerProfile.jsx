@@ -74,17 +74,26 @@ const TrainerProfile = () => {
         setLoading(true);
         // If no ID is provided, we are viewing our own profile
         const targetId = id || 'me';
-        
         const data = targetId === 'me' 
           ? await trainerService.getProfile() 
           : await trainerService.getById(targetId);
         
-        setTrainer(data.profile || data);
+        const profile = data.profile || data;
+        setTrainer(profile);
 
-        // Fetch reviews
-        const reviewData = await reviewService.getTrainerReviews(data.user?._id || data.id);
-        setReviews(reviewData);
+        // Fetch reviews using the correct user ID from the profile
+        try {
+          const trainerUserId = profile.user?._id || profile.user;
+          if (trainerUserId) {
+            const reviewData = await reviewService.getTrainerReviews(trainerUserId);
+            setReviews(reviewData || []);
+          }
+        } catch (err) {
+          console.error("Failed to load reviews:", err);
+          // Don't toast error for reviews, just show what we have
+        }
       } catch (err) {
+        console.error("Profile load error:", err);
         toast.error("Failed to load trainer profile");
       } finally {
         setLoading(false);
@@ -119,7 +128,7 @@ const TrainerProfile = () => {
   const specialization = trainer.specialization || trainer.sports?.[0] || 'Professional Coach';
   const philosophy = trainer.philosophy || 'Professional Coach dedicated to helping athletes unlock their potential.';
   const avatar = trainer.user?.avatar || trainer.avatar;
-  const isVerified = trainer.user?.isVerified || trainer.isVerified;
+  const isVerified = trainer.user?.isTrainerVerified || trainer.isTrainerVerified;
 
   const dynamicStats = [
     { label: 'Athletes Coached', value: trainer.traineeCount || '0' },

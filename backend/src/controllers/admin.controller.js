@@ -192,3 +192,53 @@ export const getAdminProducts = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+// @desc    Toggle trainer verification and subscription
+// @route   PUT /api/admin/users/:id/verify
+// @access  Private/Admin
+export const verifyTrainer = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    if (user.role !== 'trainer') return res.status(400).json({ message: "User is not a trainer" });
+
+    // Toggle status
+    user.isTrainerVerified = !user.isTrainerVerified;
+    // When verifying, we also give them subscription for now as per requirement
+    user.isSubscribed = user.isTrainerVerified; 
+    
+    await user.save();
+    res.json({ message: `Trainer verification status updated`, user });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// @desc    Bulk update all existing trainers to be verified and subscribed
+// @route   POST /api/admin/bulk-verify-trainers
+// @access  Private/Admin
+export const bulkVerifyTrainers = async (req, res) => {
+  try {
+    const result = await User.updateMany(
+      { role: 'trainer' },
+      { $set: { isTrainerVerified: true, isSubscribed: true } }
+    );
+    res.json({ message: `Bulk update successful. ${result.modifiedCount} trainers updated.`, result });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+// @desc    Toggle user subscription status
+// @route   PUT /api/admin/users/:id/subscription
+// @access  Private/Admin
+export const toggleSubscription = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    user.isSubscribed = !user.isSubscribed;
+    await user.save();
+    res.json({ message: `Subscription status updated`, user });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
