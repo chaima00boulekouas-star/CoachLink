@@ -304,7 +304,7 @@ const Step3 = ({ data, set }) => {
 };
 
 // Step 4: Verification
-const Step4 = ({ data, set, next }) => {
+const Step4 = ({ data, set, next, setError: setGlobalError }) => {
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
@@ -334,6 +334,7 @@ const Step4 = ({ data, set, next }) => {
       await authService.verifyOtp(data.email, otp);
       set({ ...data, isVerified: true });
       setSuccess('Email verified successfully!');
+      if (typeof setGlobalError === 'function') setGlobalError('');
       setTimeout(() => next(), 1000); // Auto-advance to next step
     } catch (err) {
       setError(err.response?.data?.message || 'Invalid or expired code.');
@@ -458,6 +459,13 @@ const AthleteSignUp = () => {
 
   const progress = (step / TOTAL_STEPS) * 100;
 
+  // Clear verification error if user becomes verified
+  React.useEffect(() => {
+    if (data.isVerified && error === 'Please verify your email to continue.') {
+      setError('');
+    }
+  }, [data.isVerified, error]);
+
   const next = () => { 
     if (step === 1) {
       if (!data.name || !data.email || !data.password || !data.age || !data.gender || !data.location) {
@@ -556,7 +564,7 @@ const AthleteSignUp = () => {
           {step === 1 && <Step1 data={data} set={setData} />}
           {step === 2 && <Step2 data={data} set={setData} />}
           {step === 3 && <Step3 data={data} set={setData} />}
-          {step === 4 && <Step4 data={data} set={setData} next={next} />}
+          {step === 4 && <Step4 data={data} set={setData} next={next} setError={setError} />}
           {step === 5 && <Step5 data={data} set={setData} />}
 
           {/* Error message */}
