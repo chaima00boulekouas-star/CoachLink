@@ -456,6 +456,7 @@ const AthleteSignUp = () => {
   const [loading, setLoad]  = useState(false);
   const [error, setError]   = useState('');
   const navigate            = useNavigate();
+  const dispatch            = useDispatch();
 
   const progress = (step / TOTAL_STEPS) * 100;
 
@@ -505,9 +506,9 @@ const AthleteSignUp = () => {
         reason: data.reason || '',
         isVerified: data.isVerified,
       };
-      const data = await authService.athleteSignup(payload);
+      const res = await authService.athleteSignup(payload);
       // Auto-login: store user/token in redux and localStorage
-      dispatch(login({ user: data.user, role: data.user.role, token: data.token }));
+      dispatch(login({ user: res.user, role: res.user.role, token: res.token }));
       navigate('/athlete/home');
     } catch (err) {
       setError(err.response?.data?.message || 'Signup failed. Please try again.');
