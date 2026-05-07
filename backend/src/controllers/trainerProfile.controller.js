@@ -31,7 +31,14 @@ export const getAllTrainers = async (req, res) => {
       query.price = { $lte: Number(maxPrice) };
     }
 
-    let trainerProfiles = await TrainerProfile.find(query).populate('user', 'name email avatar isTrainerVerified isSubscribed');
+    let trainerProfiles = await TrainerProfile.find(query).populate({
+      path: 'user',
+      match: { status: { $ne: 'banned' } },
+      select: 'name email avatar gender isTrainerVerified isSubscribed'
+    });
+
+    // Only keep profiles that have a matching (active) user
+    trainerProfiles = trainerProfiles.filter(profile => profile.user);
 
     // Search by name, specialization, or sport
     if (search) {
@@ -48,9 +55,10 @@ export const getAllTrainers = async (req, res) => {
       _id: profile.user?._id,
       id: profile.user?._id,
       name: profile.user?.name || 'Anonymous Coach',
-      image: profile.user?.avatar ? `http://localhost:5000${profile.user.avatar}` : 'https://images.unsplash.com/photo-1594381898411-846e7d193883?auto=format&fit=crop&q=80&w=200',
+      image: profile.user?.avatar || null,
+      gender: profile.user?.gender || 'other',
       rating: profile.ratingAvg || 0,
-      ratingCount: profile.ratingCount || 0,
+      reviewCount: profile.ratingCount || 0,
       sport: profile.sports?.[0] || profile.specialization || 'Fitness',
       sports: profile.sports || [],
       location: profile.location || 'Online',
@@ -137,7 +145,7 @@ export const getCoachProfile = async (req, res) => {
       targetId = req.user.id;
     }
 
-    const profile = await TrainerProfile.findOne({ user: targetId }).populate('user', 'name email avatar isTrainerVerified isSubscribed');
+    const profile = await TrainerProfile.findOne({ user: targetId }).populate('user', 'name email avatar gender isTrainerVerified isSubscribed');
     
     if (!profile) {
       return res.status(404).json({ message: "Trainer profile not found" });

@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Save, MapPin, Loader2 } from 'lucide-react';
+import { User, Save, MapPin, Loader2, Camera } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 import { useSelector, useDispatch } from 'react-redux';
 import { updateUser } from '../redux/store';
 import { authService } from '../api/authService';
+import { settingsService } from '../api/dataService';
+import { getImageUrl } from '../utils/imageUrl';
+import { toast } from 'react-hot-toast';
 
 const SPORTS = ['Tennis', 'Football', 'Basketball', 'Gym', 'Yoga', 'Boxing', 'Swimming', 'Running'];
 const LEVELS = ['Beginner', 'Intermediate', 'Advanced', 'Competitive'];
@@ -65,6 +68,7 @@ const AthleteProfile = () => {
       if (response.user) {
         dispatch(updateUser(response.user));
         setSaved(true);
+        toast.success('Profile saved!');
         setTimeout(() => {
           setSaved(false);
           navigate('/athlete/profile');
@@ -73,6 +77,25 @@ const AthleteProfile = () => {
     } catch (err) {
       console.error('Save error:', err);
       setError(err.response?.data?.message || 'Failed to save profile. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    setLoading(true);
+    try {
+      const res = await settingsService.updateAvatar(formData);
+      dispatch(updateUser(res.user));
+      toast.success('Profile photo updated!');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to upload photo');
     } finally {
       setLoading(false);
     }
@@ -91,18 +114,30 @@ const AthleteProfile = () => {
 
           {/* Avatar */}
           <div className="flex flex-col sm:flex-row items-center gap-6 mb-8 pb-8 border-b border-slate-100 dark:border-slate-700">
-            <div className="w-24 h-24 rounded-2xl overflow-hidden bg-indigo-800 flex items-center justify-center shadow-md">
-              <span className="text-4xl font-black text-white/40">
-                {profile.firstName ? profile.firstName.charAt(0) : 'A'}
-              </span>
+            <div className="relative group">
+              <div className="w-24 h-24 rounded-2xl overflow-hidden bg-indigo-800 flex items-center justify-center shadow-md">
+                <img 
+                  src={getImageUrl(user?.avatar, user?.gender)} 
+                  alt="Profile" 
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'A')}&background=6366f1&color=fff`;
+                  }}
+                />
+              </div>
+              <label className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl cursor-pointer">
+                <Camera className="text-white" size={24} />
+                <input type="file" className="hidden" accept="image/*" onChange={handleAvatarChange} />
+              </label>
             </div>
             <div className="text-center sm:text-left">
               <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-1">Profile Photo</h2>
               <p className="text-sm text-slate-500 mb-3">JPG, GIF or PNG. Max size 5MB.</p>
               <div className="flex gap-3 justify-center sm:justify-start">
-                <button className="text-sm font-bold text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 px-4 py-2 rounded-xl hover:bg-indigo-100 transition-colors">
+                <label className="text-sm font-bold text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 px-4 py-2 rounded-xl hover:bg-indigo-100 transition-colors cursor-pointer">
                   Upload Photo
-                </button>
+                  <input type="file" className="hidden" accept="image/*" onChange={handleAvatarChange} />
+                </label>
                 <button className="text-sm font-bold text-slate-500 hover:text-red-500 transition-colors">
                   Remove
                 </button>

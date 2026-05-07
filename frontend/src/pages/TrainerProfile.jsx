@@ -78,12 +78,16 @@ const TrainerProfile = () => {
           ? await trainerService.getProfile() 
           : await trainerService.getById(targetId);
         
-        const profile = data.profile || data;
-        setTrainer(profile);
+        const profileData = data.profile || (data._id ? data : null);
+        if (!profileData) {
+          setTrainer(null);
+        } else {
+          setTrainer(profileData);
+        }
 
         // Fetch reviews using the correct user ID from the profile
         try {
-          const trainerUserId = profile.user?._id || profile.user;
+          const trainerUserId = profileData.user?._id || profileData.user;
           if (trainerUserId) {
             const reviewData = await reviewService.getTrainerReviews(trainerUserId);
             setReviews(reviewData || []);
@@ -210,9 +214,12 @@ const TrainerProfile = () => {
           {/* Right: Photo */}
           <div className="w-36 h-36 md:w-48 md:h-48 lg:w-56 lg:h-56 rounded-2xl overflow-hidden border-4 border-white/20 shadow-2xl flex-shrink-0 self-start md:ml-auto bg-slate-800">
             <img
-              src={getImageUrl(avatar)}
+              src={getImageUrl(avatar, trainer.user?.gender || trainer.gender)}
               alt={name}
               className="w-full h-full object-cover"
+              onError={(e) => {
+                e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name || 'T')}&background=f97316&color=fff`;
+              }}
             />
           </div>
         </div>
@@ -286,10 +293,12 @@ const TrainerProfile = () => {
             </p>
             <div className="flex items-center justify-center gap-3">
               <img 
-                src={getImageUrl(currentReview?.athlete?.avatar)} 
+                src={getImageUrl(currentReview?.athlete?.avatar, currentReview?.athlete?.gender)} 
                 alt={currentReview?.athlete?.name} 
-                className="w-10 h-10 rounded-full object-cover" 
-                onError={(e) => { e.target.src = `https://ui-avatars.com/api/?name=${currentReview?.athlete?.name || 'User'}&background=random`; }}
+                className="w-10 h-10 rounded-full object-cover"
+                onError={(e) => {
+                  e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(currentReview?.athlete?.name || 'A')}&background=6366f1&color=fff`;
+                }}
               />
               <div className="text-left">
                 <p className="text-sm font-black text-slate-900 dark:text-white">{currentReview?.athlete?.name || "Anonymous"}</p>

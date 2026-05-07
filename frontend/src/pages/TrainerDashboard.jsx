@@ -364,15 +364,14 @@ const TrainerDashboard = () => {
               />
               <div className="p-6 text-center -mt-12">
                 <div className="relative inline-block mb-3">
-                  {user?.avatar ? (
-                    <img 
-                      src={getImageUrl(user.avatar)} 
-                      alt={userName} 
-                      className="w-20 h-20 rounded-full object-cover border-4 border-white dark:border-dark-card shadow-xl bg-white" 
-                    />
-                  ) : (
-                    <Avatar name={userName} className="w-20 h-20 text-3xl border-4 border-white dark:border-dark-card shadow-xl" />
-                  )}
+                  <img 
+                    src={getImageUrl(user.avatar, user.gender)} 
+                    alt={userName} 
+                    className="w-20 h-20 rounded-full object-cover border-4 border-white dark:border-dark-card shadow-xl bg-white" 
+                    onError={(e) => {
+                      e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(userName || 'T')}&background=f97316&color=fff`;
+                    }}
+                  />
                   <div className="absolute bottom-1 right-1 w-4 h-4 bg-green-500 border-2 border-white dark:border-dark-card rounded-full shadow-sm" />
                 </div>
                 <h3 className="font-black text-slate-900 dark:text-white text-base mb-0.5 flex items-center justify-center gap-1.5">

@@ -134,7 +134,7 @@ const AthleteDashboard = () => {
                 <span className="text-xs text-slate-500 ml-1">pts</span>
               </div>
             </div>
-            <PerformanceChart />
+            <PerformanceChart points={data?.performanceHistory} />
             <div className="flex justify-between text-[10px] text-slate-400 font-bold mt-4 uppercase">
               <span>1w</span><span>2w</span><span>1m</span><span>3m</span><span>All</span>
             </div>
@@ -189,13 +189,14 @@ const AthleteDashboard = () => {
               <MapPin size={12} /> {profile.location}
             </p>
             <div className="aspect-square rounded-2xl overflow-hidden bg-slate-700/50 mb-6 border-2 border-white/10">
-              {user?.avatar ? (
-                <img src={getImageUrl(user.avatar)} alt={name} className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-white/20 text-7xl font-black">
-                  {name.charAt(0)}
-                </div>
-              )}
+              <img 
+                src={getImageUrl(user.avatar, user.gender)} 
+                alt={name} 
+                className="w-full h-full object-cover" 
+                onError={(e) => {
+                  e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name || 'A')}&background=6366f1&color=fff`;
+                }}
+              />
             </div>
             <div className="grid grid-cols-3 gap-2 text-center mb-6">
               {[

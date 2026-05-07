@@ -20,11 +20,11 @@ const StatusBadge = ({ status }) => {
 };
 
 // Simple SVG line-chart for platform activity
-const CHART_POINTS = [18,28,35,30,52,45,60,55,72,68,80,88,75,90,96];
-const ActivityChart = () => {
+const ActivityChart = ({ data = [18,28,35,30,52,45,60,55,72,68,80,88,75,90,96] }) => {
   const w = 700; const h = 160; const pad = 20;
-  const xs = CHART_POINTS.map((_, i) => pad + (i / (CHART_POINTS.length - 1)) * (w - pad * 2));
-  const ys = CHART_POINTS.map(v => h - pad - ((v / 100) * (h - pad * 2)));
+  const points = (data && data.length > 0) ? data : [18,28,35,30,52,45,60,55,72,68,80,88,75,90,96];
+  const xs = points.map((_, i) => pad + (i / (points.length - 1)) * (w - pad * 2));
+  const ys = points.map(v => h - pad - ((v / 100) * (h - pad * 2)));
   const polyline = xs.map((x, i) => `${x},${ys[i]}`).join(' ');
   const area = `M${xs[0]},${ys[0]} ` + xs.slice(1).map((x, i) => `L${x},${ys[i+1]}`).join(' ') + ` L${xs[xs.length-1]},${h} L${xs[0]},${h} Z`;
 
@@ -45,6 +45,7 @@ const ActivityChart = () => {
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState([]);
+  const [activity, setActivity] = useState([]);
   const [reports, setReports] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -60,6 +61,7 @@ const AdminDashboard = () => {
       try {
         const sData = await adminService.getStats();
         setStats(sData.stats || []);
+        setActivity(sData.activity || []);
       } catch (err) {
         console.error("Stats fetch error:", err);
       }
@@ -140,7 +142,7 @@ const AdminDashboard = () => {
             </div>
             <span className="text-xs font-bold text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 px-3 py-1.5 rounded-lg">Last 15 days</span>
           </div>
-          <div className="mt-4"><ActivityChart /></div>
+          <div className="mt-4"><ActivityChart data={activity} /></div>
           <div className="flex justify-between mt-2 text-[10px] text-slate-400">
             {['1k','5k','10k','15k','20k','25k','30k','35k','40k','45k','50k','55k','60k'].map(l => <span key={l}>{l}</span>)}
           </div>

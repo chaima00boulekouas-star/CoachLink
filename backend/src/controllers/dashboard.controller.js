@@ -111,7 +111,38 @@ export const getCoachDashboardStats = async (req, res) => {
       };
     }));
 
-    // 8. Send the compiled dashboard data to the frontend
+    // 8. Calculate Earnings History (Last 6 Months)
+    const earningsByMonth = {};
+    const monthNames = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date();
+      d.setMonth(d.getMonth() - i);
+      const monthLabel = d.toLocaleString('default', { month: 'short' });
+      monthNames.push(monthLabel);
+      earningsByMonth[monthLabel] = 0;
+    }
+
+    orders.forEach(order => {
+      if (order.paymentStatus === "paid" && order.status !== "cancelled") {
+        const monthLabel = new Date(order.createdAt).toLocaleString('default', { month: 'short' });
+        if (earningsByMonth[monthLabel] !== undefined) {
+           const trainerItems = order.items.filter(
+            item => item.trainer && item.trainer.toString() === trainerId.toString()
+          );
+          const orderEarnings = trainerItems.reduce(
+            (sum, item) => sum + (item.price * item.quantity), 0
+          );
+          earningsByMonth[monthLabel] += orderEarnings;
+        }
+      }
+    });
+
+    const earnings = monthNames.map(month => ({
+      month,
+      value: earningsByMonth[month]
+    }));
+
+    // 9. Send the compiled dashboard data to the frontend
     res.status(200).json({
       stats: {
         totalEarnings,
@@ -121,6 +152,7 @@ export const getCoachDashboardStats = async (req, res) => {
         ratingAvg,
         ratingCount
       },
+      earnings,
       recentOrders,
       upcomingSessions: upcomingSessionsList,
       athleteRequests
@@ -169,6 +201,19 @@ export const getAthleteDashboardStats = async (req, res) => {
     // 5. Calculate "Performance Score" (Mock logic based on sessions for now)
     const performanceScore = Math.min(100, (completedSessions * 5) + 50);
 
+    // 6. Generate Performance History (11 points for the chart)
+    // We'll create a curve that ends at the current score
+    const points = [];
+    for (let i = 0; i < 11; i++) {
+      // Create some variance but generally trending towards the current score
+      const variance = Math.sin(i) * 5;
+      const progress = (i / 10);
+      const baseValue = 40 + (performanceScore - 40) * progress;
+      const scoreAtPoint = Math.max(0, Math.min(100, baseValue + variance));
+      // Map to SVG Y-coordinates (0 is top, 100 is bottom)
+      points.push(100 - scoreAtPoint);
+    }
+
     res.status(200).json({
       stats: {
         totalSessions,
@@ -177,6 +222,7 @@ export const getAthleteDashboardStats = async (req, res) => {
         activeTrainers,
         performanceScore,
       },
+      performanceHistory: points,
       recentSessions,
       profile: {
         sport: profile?.sports?.[0] || "General",

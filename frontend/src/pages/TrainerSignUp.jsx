@@ -148,6 +148,7 @@ const INITIAL = {
   certifications: '', idDoc: null, certDocs: null, experience: '', achievements: '',
   philosophy: '', levels: [],
   price: '75', availability: [],
+  gender: '',
 };
 
 const TrainerSignUp = () => {
@@ -164,7 +165,7 @@ const TrainerSignUp = () => {
   const navigate            = useNavigate();
 
   const set     = (key, val) => setForm(p => ({ ...p, [key]: val }));
-  const isValid = form.name && form.email && form.password && form.sports.length > 0 && form.location && form.idDoc && form.certDocs && isVerified;
+  const isValid = form.name && form.email && form.password && form.sports.length > 0 && form.location && form.idDoc && form.certDocs && isVerified && form.gender;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -188,6 +189,7 @@ const TrainerSignUp = () => {
         levels: form.levels,
         availability: form.availability,
         price: form.price,
+        gender: form.gender,
         isVerified: isVerified,
       };
       const data = await authService.trainerSignup(payload);
@@ -259,9 +261,25 @@ const TrainerSignUp = () => {
                 />
               </div>
 
-              <div>
-                <FieldLabel required>Sport Specialization</FieldLabel>
-                <SportSelect value={form.sports} onChange={v => set('sports', v)} />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <FieldLabel required>Sport Specialization</FieldLabel>
+                  <SportSelect value={form.sports} onChange={v => set('sports', v)} />
+                </div>
+                <div>
+                  <FieldLabel required>Gender</FieldLabel>
+                  <select
+                    value={form.gender}
+                    onChange={e => set('gender', e.target.value)}
+                    required
+                    className={inputCls}
+                  >
+                    <option value="">Choose your gender</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other / Prefer not to say</option>
+                  </select>
+                </div>
               </div>
 
               <div>

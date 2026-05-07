@@ -21,6 +21,7 @@ const safeUser = (user, extra = {}) => ({
   role: user.role,
   phone: user.phone || null,
   avatar: user.avatar || null,
+  gender: user.gender || null,
   isSubscribed: user.isSubscribed || false,
   isTrainerVerified: user.isTrainerVerified || false,
   ...extra,
@@ -37,7 +38,7 @@ const getProfileData = async (user) => {
         fitnessGoals: profile.fitness_goals,
         sports: profile.sports,
         age: profile.age,
-        gender: profile.gender,
+        gender: user.gender || profile.gender,
         goal: profile.goal,
         style: profile.style,
         availability: profile.availability,
@@ -89,6 +90,7 @@ export const createUser = async (req, res) => {
       email: email.toLowerCase(), 
       password: hashed, 
       role,
+      gender: req.body.gender || 'other',
       verificationToken,
       isVerified: req.body.isVerified || false,
       isSubscribed: false, // New trainers must pay
@@ -305,7 +307,7 @@ export const getUsers = async (req, res) => {
 // @access  Private
 export const getAthletes = async (req, res) => {
   try {
-    const athletes = await User.find({ role: 'athlete', isBanned: false }).select('-password').lean();
+    const athletes = await User.find({ role: 'athlete', status: { $ne: 'banned' } }).select('-password').lean();
 
     // Fetch all athlete profiles in one query
     const athleteIds = athletes.map(a => a._id);
@@ -371,6 +373,7 @@ export const updateUser = async (req, res) => {
     if (email !== undefined) userUpdates.email = email.toLowerCase();
     if (phone !== undefined) userUpdates.phone = phone;
     if (avatar !== undefined) userUpdates.avatar = avatar;
+    if (req.body.gender !== undefined) userUpdates.gender = req.body.gender;
     if (password) {
       userUpdates.password = await bcrypt.hash(password, 10);
     }

@@ -76,7 +76,7 @@ export const getCoachReviews = async (req, res) => {
 
     // Fetch reviews for the trainer and populate the athlete's name to display on the frontend
     const reviews = await Review.find({ trainer: trainerId })
-      .populate("athlete", "name avatar") // Fetches name and avatar of the athlete
+      .populate("athlete", "name avatar gender") // Fetches name, avatar and gender of the athlete
       .sort({ createdAt: -1 }); // Newest reviews first
 
     res.status(200).json(reviews);

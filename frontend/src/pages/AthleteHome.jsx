@@ -3,63 +3,11 @@ import { Link } from 'react-router-dom';
 import { Search, Star, Zap, BookOpen, MessageSquare, Calendar, TrendingUp, ArrowRight, MapPin, User } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 import { useSelector } from 'react-redux';
+import { trainerService } from '../api/dataService';
+import { getImageUrl } from '../utils/imageUrl';
+import { Loader2 } from 'lucide-react';
 
-const FEATURED_COACHES = [
-  {
-    id: 1,
-    name: 'Tashi Duncan',
-    sport: 'Tennis',
-    rating: 4.9,
-    reviews: 36,
-    price: '$99/mo',
-    tag: 'Top Rated',
-    tagColor: 'bg-amber-500',
-    image: 'https://images.unsplash.com/photo-1574680096145-d05b474e2155?auto=format&fit=crop&q=80&w=400',
-  },
-  {
-    id: 2,
-    name: 'Marcus Johnson',
-    sport: 'Football',
-    rating: 4.8,
-    reviews: 28,
-    price: '$79/mo',
-    tag: 'Popular',
-    tagColor: 'bg-indigo-600',
-    image: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&q=80&w=400',
-  },
-  {
-    id: 3,
-    name: 'Elena Williams',
-    sport: 'Basketball',
-    rating: 4.7,
-    reviews: 21,
-    price: '$89/mo',
-    tag: 'New',
-    tagColor: 'bg-green-500',
-    image: 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=400',
-  },
-];
 
-const RECOMMENDED = [
-  {
-    id: 4,
-    name: 'James Carter',
-    sport: 'Tennis',
-    rating: 4.6,
-    price: '$69/mo',
-    image: 'https://images.unsplash.com/photo-1568602471122-7832951cc4c5?auto=format&fit=crop&q=80&w=400',
-    reason: 'Matches your sport preference',
-  },
-  {
-    id: 1,
-    name: 'Tashi Duncan',
-    sport: 'Tennis',
-    rating: 4.9,
-    price: '$99/mo',
-    image: 'https://images.unsplash.com/photo-1574680096145-d05b474e2155?auto=format&fit=crop&q=80&w=400',
-    reason: 'Highly rated in your area',
-  },
-];
 
 const QUICK_ACTIONS = [
   { icon: Search, label: 'Find Trainers', sub: 'Browse all coaches', to: '/coaches', color: 'bg-indigo-50 dark:bg-indigo-900/10 text-indigo-600' },
@@ -70,10 +18,17 @@ const QUICK_ACTIONS = [
 
 const CoachCard = ({ coach }) => (
   <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700 overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-200">
-    <div className="relative aspect-[4/3] overflow-hidden">
-      <img src={coach.image} alt={coach.name} className="w-full h-full object-cover" />
+    <div className="relative aspect-[4/3] overflow-hidden bg-slate-100 dark:bg-slate-700">
+      <img 
+        src={getImageUrl(coach.image, coach.gender)} 
+        alt={coach.name} 
+        className="w-full h-full object-cover" 
+        onError={(e) => {
+          e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(coach.name || 'C')}&background=f97316&color=fff`;
+        }}
+      />
       {coach.tag && (
-        <span className={`absolute top-3 left-3 ${coach.tagColor} text-white text-[10px] font-black px-2.5 py-1 rounded-full`}>
+        <span className={`absolute top-3 left-3 ${coach.tagColor || 'bg-indigo-600'} text-white text-[10px] font-black px-2.5 py-1 rounded-full`}>
           {coach.tag}
         </span>
       )}
@@ -84,15 +39,17 @@ const CoachCard = ({ coach }) => (
       )}
       <div className="absolute top-3 right-3 bg-white/90 dark:bg-slate-800/90 backdrop-blur rounded-lg px-2 py-1 flex items-center gap-1">
         <Star size={11} className="fill-amber-400 text-amber-400" />
-        <span className="text-xs font-bold text-slate-900 dark:text-white">{coach.rating}</span>
+        <span className="text-xs font-bold text-slate-900 dark:text-white">{coach.rating || '0.0'}</span>
       </div>
     </div>
     <div className="p-4">
-      <h3 className="font-bold text-slate-900 dark:text-white">{coach.name}</h3>
-      <p className="text-xs text-orange-500 font-semibold mb-3">{coach.sport}</p>
+      <h3 className="font-bold text-slate-900 dark:text-white truncate">{coach.name}</h3>
+      <p className="text-xs text-orange-500 font-semibold mb-3 truncate">{coach.sport}</p>
       <div className="flex items-center justify-between">
-        <span className="text-sm font-black text-slate-900 dark:text-white">{coach.price}</span>
-        <Link to={`/trainer/${coach.id}`}>
+        <span className="text-sm font-black text-slate-900 dark:text-white">
+          {coach.price ? `$${coach.price}/mo` : 'Contact for Price'}
+        </span>
+        <Link to={`/trainer/${coach.id || coach._id}`}>
           <button className="bg-orange-500 text-white text-xs font-bold px-4 py-2 rounded-xl hover:opacity-90 transition-opacity">
             View Profile
           </button>
@@ -104,12 +61,52 @@ const CoachCard = ({ coach }) => (
 
 const AthleteHome = () => {
   const user = useSelector((s) => s.auth.user);
+  const [trainers, setTrainers] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const fetchTrainers = async () => {
+      try {
+        const data = await trainerService.getAll();
+        setTrainers(data.trainers || []);
+      } catch (err) {
+        console.error('Failed to fetch trainers:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTrainers();
+  }, []);
 
   const name = user?.name || 'Athlete';
   const location = user?.location || '';
   const sport = Array.isArray(user?.sports) ? user.sports[0] : (user?.sport || '');
   const level = user?.level || '';
   const age = user?.age || '';
+
+  // Filter recommended (matching sport)
+  let recommended = trainers
+    .filter(t => t.sports && t.sports.some(s => s.toLowerCase() === (sport || '').toLowerCase()))
+    .slice(0, 4)
+    .map(t => ({ ...t, reason: 'Matches your sport preference' }));
+
+  // Fallback if no matching sport trainers
+  if (recommended.length === 0 && trainers.length > 0) {
+    recommended = [...trainers]
+      .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+      .slice(0, 4)
+      .map(t => ({ ...t, reason: 'Top rated coaches for you' }));
+  }
+
+  // Filter featured (top rated)
+  const popular = [...trainers]
+    .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+    .slice(0, 6)
+    .map(t => ({ 
+      ...t, 
+      tag: t.rating > 4.5 ? 'Top Rated' : 'Popular',
+      tagColor: t.rating > 4.5 ? 'bg-amber-500' : 'bg-indigo-600'
+    }));
 
   return (
     <DashboardLayout>
@@ -192,11 +189,23 @@ const AthleteHome = () => {
               View all <ArrowRight size={14} />
             </Link>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            {RECOMMENDED.map((coach) => (
-              <CoachCard key={coach.id} coach={coach} />
-            ))}
-          </div>
+          
+          {loading ? (
+            <div className="flex items-center justify-center py-12 bg-white dark:bg-slate-800 rounded-3xl border border-dashed border-slate-200 dark:border-slate-700">
+              <Loader2 className="animate-spin text-indigo-600" size={32} />
+            </div>
+          ) : recommended.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              {recommended.map((coach) => (
+                <CoachCard key={coach.id || coach._id} coach={coach} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 bg-slate-50 dark:bg-slate-700/30 rounded-3xl border border-dashed border-slate-200 dark:border-slate-700">
+              <p className="text-sm text-slate-500 dark:text-slate-400 italic">No specific recommendations for {sport} yet.</p>
+              <Link to="/coaches" className="text-xs font-bold text-indigo-600 mt-2 inline-block hover:underline">Explore all trainers →</Link>
+            </div>
+          )}
         </div>
 
         {/* Featured / Popular Coaches */}
@@ -207,11 +216,24 @@ const AthleteHome = () => {
               View all <ArrowRight size={14} />
             </Link>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {FEATURED_COACHES.map((coach) => (
-              <CoachCard key={coach.id} coach={coach} />
-            ))}
-          </div>
+          
+          {loading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="bg-white dark:bg-slate-800 rounded-3xl aspect-[4/5] animate-pulse border border-slate-100 dark:border-slate-700" />
+              ))}
+            </div>
+          ) : popular.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {popular.map((coach) => (
+                <CoachCard key={coach.id || coach._id} coach={coach} />
+              ))}
+            </div>
+          ) : (
+             <div className="text-center py-12">
+              <p className="text-sm text-slate-500 italic">No popular coaches found.</p>
+            </div>
+          )}
         </div>
 
       </div>
