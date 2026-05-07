@@ -26,7 +26,7 @@ const NewSessionModal = ({ onClose, onCreated }) => {
   const [athletes, setAthletes] = useState([]);
   const [loadingAthletes, setLoadingAthletes] = useState(true);
   const [form, setForm] = useState({
-    athleteId: '', date: '', time: '', title: '', duration: '1 hour', location: '', notes: '',
+    athleteIds: [], date: '', time: '', title: '', duration: '1 hour', location: '', notes: '',
   });
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -47,17 +47,34 @@ const NewSessionModal = ({ onClose, onCreated }) => {
   }, []);
 
   const set = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
+  
+  const toggleAthlete = (id) => {
+    setForm(p => {
+      const ids = p.athleteIds.includes(id) 
+        ? p.athleteIds.filter(i => i !== id)
+        : [...p.athleteIds, id];
+      return { ...p, athleteIds: ids };
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (form.athleteIds.length === athletes.length) {
+      setForm(p => ({ ...p, athleteIds: [] }));
+    } else {
+      setForm(p => ({ ...p, athleteIds: athletes.map(a => a._id) }));
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.athleteId || !form.date || !form.time) return;
+    if (form.athleteIds.length === 0 || !form.date || !form.time) return;
     setError('');
     setSubmitting(true);
 
     try {
       const dateTime = new Date(`${form.date}T${form.time}`);
       await sessionService.create({
-        athleteId: form.athleteId,
+        athleteIds: form.athleteIds,
         date: dateTime.toISOString(),
         title: form.title || 'Training Session',
         duration: form.duration,
@@ -82,49 +99,83 @@ const NewSessionModal = ({ onClose, onCreated }) => {
         <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-700">
           <div>
             <h2 className="text-xl font-black text-slate-900 dark:text-white">Schedule a Session</h2>
-            <p className="text-xs text-slate-500 mt-0.5">Create a session with one of your accepted athletes</p>
+            <p className="text-xs text-slate-500 mt-0.5">Create a session with one or more of your athletes</p>
           </div>
           <button onClick={onClose} className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors">
             <X size={18} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
           {success ? (
             <div className="flex flex-col items-center justify-center py-8 text-center">
               <div className="w-16 h-16 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center mb-4">
                 <CheckCircle size={32} className="text-green-500" />
               </div>
-              <h3 className="text-lg font-black text-slate-900 dark:text-white mb-2">Session Created!</h3>
-              <p className="text-sm text-slate-500">The athlete has been notified.</p>
+              <h3 className="text-lg font-black text-slate-900 dark:text-white mb-2">Sessions Created!</h3>
+              <p className="text-sm text-slate-500">The athletes have been notified.</p>
             </div>
           ) : (
             <>
-              {/* Select Athlete */}
+              {/* Select Athletes */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Select Athlete</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Select Athletes</label>
+                  {athletes.length > 0 && (
+                    <button 
+                      type="button" 
+                      onClick={handleSelectAll}
+                      className="text-[10px] font-black text-primary-blue uppercase tracking-wider hover:underline"
+                    >
+                      {form.athleteIds.length === athletes.length ? 'Deselect All' : 'Select All'}
+                    </button>
+                  )}
+                </div>
                 {loadingAthletes ? (
                   <div className="flex items-center gap-2 py-3 text-sm text-slate-400">
                     <Loader size={14} className="animate-spin" /> Loading athletes...
                   </div>
                 ) : athletes.length === 0 ? (
                   <div className="p-4 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-xl">
-                    <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">No accepted athletes yet. Athletes must send you a request first, and you need to accept it.</p>
+                    <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">No accepted athletes yet.</p>
                   </div>
                 ) : (
-                  <select value={form.athleteId} onChange={set('athleteId')} required className={inputCls}>
-                    <option value="">Choose an athlete...</option>
+                  <div className="max-h-40 overflow-y-auto border border-slate-200 dark:border-slate-600 rounded-xl p-1.5 space-y-1">
                     {athletes.map((a) => (
-                      <option key={a._id} value={a._id}>{a.name} — {a.email}</option>
+                      <div 
+                        key={a._id} 
+                        onClick={() => toggleAthlete(a._id)}
+                        className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors ${
+                          form.athleteIds.includes(a._id) 
+                            ? 'bg-primary-blue/10 dark:bg-primary-blue/20 border border-primary-blue/20' 
+                            : 'hover:bg-slate-50 dark:hover:bg-slate-700 border border-transparent'
+                        }`}
+                      >
+                        <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
+                          form.athleteIds.includes(a._id) 
+                            ? 'bg-primary-blue border-primary-blue text-white' 
+                            : 'border-slate-300 dark:border-slate-500'
+                        }`}>
+                          {form.athleteIds.includes(a._id) && <CheckCircle size={10} className="fill-white" />}
+                        </div>
+                        <img 
+                          src={getImageUrl(a.avatar, `https://ui-avatars.com/api/?name=${encodeURIComponent(a.name)}&background=6366f1&color=fff`)} 
+                          className="w-6 h-6 rounded-full object-cover" 
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-bold text-slate-900 dark:text-white truncate">{a.name}</p>
+                          <p className="text-[10px] text-slate-500 truncate">{a.email}</p>
+                        </div>
+                      </div>
                     ))}
-                  </select>
+                  </div>
                 )}
               </div>
 
               {/* Title */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Session Title</label>
-                <input type="text" value={form.title} onChange={set('title')} placeholder="e.g. Strength Training, Cardio Session" className={inputCls} />
+                <input type="text" value={form.title} onChange={set('title')} placeholder="e.g. Strength Training" className={inputCls} />
               </div>
 
               {/* Date + Time */}
@@ -147,20 +198,13 @@ const NewSessionModal = ({ onClose, onCreated }) => {
                   <option value="1 hour">1 hour</option>
                   <option value="1.5 hours">1.5 hours</option>
                   <option value="2 hours">2 hours</option>
-                  <option value="3 hours">3 hours</option>
                 </select>
               </div>
 
               {/* Location */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Location</label>
-                <input type="text" value={form.location} onChange={set('location')} placeholder="e.g. City Gym, Online (Zoom)" className={inputCls} />
-              </div>
-
-              {/* Notes */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Notes (optional)</label>
-                <textarea value={form.notes} onChange={set('notes')} placeholder="Session focus, things to bring, etc." rows={2} className={`${inputCls} resize-none`} />
+                <input type="text" value={form.location} onChange={set('location')} placeholder="e.g. City Gym" className={inputCls} />
               </div>
 
               {error && (
@@ -173,11 +217,11 @@ const NewSessionModal = ({ onClose, onCreated }) => {
               <div className="flex gap-3 pt-2">
                 <button
                   type="submit"
-                  disabled={submitting || !form.athleteId || !form.date || !form.time || athletes.length === 0}
+                  disabled={submitting || form.athleteIds.length === 0 || !form.date || !form.time || athletes.length === 0}
                   className="flex-1 flex items-center justify-center gap-2 bg-primary-blue text-white font-bold py-3 rounded-xl hover:opacity-90 transition-opacity shadow-lg shadow-blue-500/20 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {submitting ? <Loader size={16} className="animate-spin" /> : <Calendar size={16} />}
-                  {submitting ? 'Creating...' : 'Schedule Session'}
+                  {submitting ? 'Creating...' : `Schedule ${form.athleteIds.length > 1 ? `${form.athleteIds.length} Sessions` : 'Session'}`}
                 </button>
                 <button type="button" onClick={onClose} className="px-5 py-3 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 font-bold text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
                   Cancel

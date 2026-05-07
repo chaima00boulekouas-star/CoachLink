@@ -8,64 +8,75 @@ import { createNotification } from "./notification.controller.js";
 // @access  Private (Trainer)
 export const createSession = async (req, res) => {
   try {
-    const { athleteId, date, title, duration, location, notes } = req.body;
+    const { athleteId, athleteIds, date, title, duration, location, notes } = req.body;
     const trainerId = req.user._id;
 
-    if (!athleteId || !date) {
-      return res.status(400).json({ message: "Athlete ID and date are required." });
-    }
+    // Support both single ID (legacy/simple) and multiple IDs
+    const idsToProcess = athleteIds && Array.isArray(athleteIds) ? athleteIds : (athleteId ? [athleteId] : []);
 
-    // Verify athlete exists
-    const athlete = await User.findById(athleteId);
-    if (!athlete || athlete.role !== "athlete") {
-      return res.status(404).json({ message: "Athlete not found." });
-    }
-
-    // Verify coaching relationship exists and is accepted
-    const connection = await CoachingRequest.findOne({
-      athlete: athleteId,
-      trainer: trainerId,
-      status: "accepted"
-    });
-
-    if (!connection) {
-      return res.status(403).json({ message: "You can only schedule sessions with athletes who have accepted your coaching request." });
+    if (idsToProcess.length === 0 || !date) {
+      return res.status(400).json({ message: "Athlete selection and date are required." });
     }
 
     if (new Date(date) < new Date()) {
       return res.status(400).json({ message: "Cannot schedule a session in the past." });
     }
 
-    const session = await Session.create({
-      trainer: trainerId,
-      athlete: athleteId,
-      date,
-      title: title || "Training Session",
-      duration: duration || "1 hour",
-      location: location || "TBD",
-      notes: notes || "",
-      status: "scheduled",
-    });
-
-    await session.populate("athlete", "name email avatar");
-
-    // Notify the athlete
+    const createdSessions = [];
     const sessionDate = new Date(date).toLocaleDateString("en-US", {
       weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit"
     });
-    await createNotification({
-      recipient: athleteId,
-      type: "session",
-      title: "New Session Scheduled",
-      message: `${req.user.name} scheduled a training session for ${sessionDate}. ${title || ""}`,
-      relatedId: session._id,
-      relatedModel: "Session",
-    });
 
-    res.status(201).json({ message: "Session created successfully", session });
+    for (const currentAthleteId of idsToProcess) {
+      // 1. Verify athlete exists
+      const athlete = await User.findById(currentAthleteId);
+      if (!athlete || athlete.role !== "athlete") continue;
+
+      // 2. Verify coaching relationship
+      const connection = await CoachingRequest.findOne({
+        athlete: currentAthleteId,
+        trainer: trainerId,
+        status: "accepted"
+      });
+      if (!connection) continue;
+
+      // 3. Create session
+      const session = await Session.create({
+        trainer: trainerId,
+        athlete: currentAthleteId,
+        date,
+        title: title || "Training Session",
+        duration: duration || "1 hour",
+        location: location || "TBD",
+        notes: notes || "",
+        status: "scheduled",
+      });
+
+      await session.populate("athlete", "name email avatar");
+      createdSessions.push(session);
+
+      // 4. Notify the athlete
+      await createNotification({
+        recipient: currentAthleteId,
+        type: "session",
+        title: "New Session Scheduled",
+        message: `${req.user.name} scheduled a training session for ${sessionDate}. ${title || ""}`,
+        relatedId: session._id,
+        relatedModel: "Session",
+      });
+    }
+
+    if (createdSessions.length === 0) {
+      return res.status(404).json({ message: "No valid athletes found or connection not accepted." });
+    }
+
+    res.status(201).json({ 
+      message: `${createdSessions.length} session(s) created successfully`, 
+      sessions: createdSessions 
+    });
   } catch (error) {
     console.error("Create Session Error:", error);
-    res.status(500).json({ message: "Failed to create session", error: error.message });
+    res.status(500).json({ message: "Failed to create sessions", error: error.message });
   }
 };
 

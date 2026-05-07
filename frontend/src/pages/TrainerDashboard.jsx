@@ -194,7 +194,7 @@ const TrainerDashboard = () => {
                   <div className="grid grid-cols-2 gap-3">
                     {[
                       { label: 'Add Product', icon: Plus, to: '/store/new-product' },
-                      { label: 'Create Program', icon: Tv2, to: '/programs/new' },
+                      { label: 'New Session', icon: Calendar, to: '/sessions' },
                       { label: 'View Sessions', icon: Clock, to: '/sessions' },
                       { label: 'Manage Store', icon: Package, to: '/store' },
                     ].map(({ label, icon: Icon, to }) => (
