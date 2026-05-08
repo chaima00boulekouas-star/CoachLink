@@ -39,7 +39,7 @@ const CoachCard = ({ coach }) => (
       )}
       <div className="absolute top-3 right-3 bg-white/90 dark:bg-slate-800/90 backdrop-blur rounded-lg px-2 py-1 flex items-center gap-1">
         <Star size={11} className="fill-amber-400 text-amber-400" />
-        <span className="text-xs font-bold text-slate-900 dark:text-white">{coach.rating || '0.0'}</span>
+        <span className="text-xs font-bold text-slate-900 dark:text-white">{Number(coach.rating || 0).toFixed(2)}</span>
       </div>
     </div>
     <div className="p-4">

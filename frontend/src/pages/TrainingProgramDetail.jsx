@@ -144,7 +144,7 @@ const TrainingProgramDetail = () => {
               <Star key={i} size={16} className={`fill-amber-400 ${i < Math.round(product.ratingAvg || 0) ? 'text-amber-400' : 'text-slate-200 dark:text-slate-700 fill-slate-200 dark:fill-slate-700'}`} />
             ))}
             <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">
-              {product.ratingAvg || '0.0'} ({product.reviewsCount || 0} reviews)
+              {Number(product.ratingAvg || 0).toFixed(2)} ({product.reviewsCount || 0} reviews)
             </span>
           </div>
 

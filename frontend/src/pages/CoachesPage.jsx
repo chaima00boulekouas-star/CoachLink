@@ -244,10 +244,10 @@ const CoachesPage = () => {
                     <div className="absolute top-2 right-2 flex flex-col gap-2">
                       <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur rounded-lg px-2 py-1 flex items-center gap-1 shadow-sm">
                         <Star size={11} className="fill-amber-400 text-amber-400" />
-                        <span className="text-xs font-bold text-slate-900 dark:text-white">
-                          {coach.rating?.toFixed(1) || '0.0'}
-                          <span className="text-[10px] text-slate-400 font-normal ml-1">({coach.ratingCount || 0})</span>
-                        </span>
+                          <span className="text-xs font-bold text-slate-900 dark:text-white">
+                            {Number(coach.rating || 0).toFixed(2)}
+                            <span className="text-[10px] text-slate-400 font-normal ml-1">({coach.ratingCount || 0})</span>
+                          </span>
                       </div>
                       <button 
                         onClick={(e) => { e.preventDefault(); toggleFavorite(coach._id || coach.id); }}

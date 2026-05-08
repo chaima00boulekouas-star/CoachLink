@@ -159,7 +159,7 @@ const FavoritesPage = () => {
                       <div className="flex items-center gap-2 mb-3">
                         <div className="flex items-center gap-1 bg-amber-50 dark:bg-amber-900/20 px-2 py-0.5 rounded-lg">
                           <Star size={10} className="fill-amber-400 text-amber-400" />
-                          <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400">{item.rating || 5.0}</span>
+                          <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400">{Number(item.rating || 5).toFixed(2)}</span>
                         </div>
                         <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 px-2 py-0.5 rounded-lg">
                           {item.sport || 'Fitness'}

@@ -185,7 +185,7 @@ const CoachProfile = () => {
               <div className="flex items-center gap-4 mb-4">
                 <div className="flex items-center gap-1.5">
                   <Star size={16} className="fill-amber-400 text-amber-400" />
-                  <span className="font-semibold">{coach.rating}</span>
+                  <span className="font-semibold">{Number(coach.rating || 0).toFixed(2)}</span>
                 </div>
                 <span className="text-white/60 text-sm">• {coach.reviews} reviews • {coach.experience} Experience</span>
                 <div className="flex items-center gap-1.5 text-white/80 text-sm">
@@ -341,7 +341,7 @@ const CoachProfile = () => {
             </div>
             <div className="flex items-center gap-2 bg-indigo-50 dark:bg-indigo-900/20 px-4 py-2 rounded-xl">
               <Star size={18} className="fill-amber-400 text-amber-400" />
-              <span className="text-xl font-black text-slate-900 dark:text-white">{coach.rating.toFixed(1)}</span>
+              <span className="text-xl font-black text-slate-900 dark:text-white">{Number(coach.rating || 0).toFixed(2)}</span>
               <span className="text-slate-400 text-sm">({coach.reviews} reviews)</span>
             </div>
           </div>

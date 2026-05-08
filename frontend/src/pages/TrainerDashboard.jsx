@@ -169,7 +169,7 @@ const TrainerDashboard = () => {
               <StatCard label="Total Products" value={String(stats.totalProducts || 0)} icon={Package} iconBg="bg-primary-blue" />
               <StatCard label="Upcoming" value={`${stats.upcomingSessions || 0} Sessions`} icon={Calendar} iconBg="bg-green-500" />
               <StatCard label="Total Athletes" value={String(stats.totalAthletes || 0)} icon={Users} iconBg="bg-purple-500" />
-              <StatCard label="Trainer Rating" value={String(stats.ratingAvg || '0.0')} icon={Star} iconBg="bg-amber-400" />
+              <StatCard label="Trainer Rating" value={Number(stats.ratingAvg || 0).toFixed(2)} icon={Star} iconBg="bg-amber-400" />
             </div>
 
             {/* Earnings Chart + Quick Actions + Sessions */}

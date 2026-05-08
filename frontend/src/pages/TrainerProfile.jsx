@@ -138,7 +138,7 @@ const TrainerProfile = () => {
     { label: 'Athletes Coached', value: trainer.traineeCount || '0' },
     { label: 'Years Experience', value: trainer.experience || '0' },
     { label: 'Programs Created', value: trainer.programCount || '0' },
-    { label: 'Avg. Rating', value: trainer.ratingAvg?.toFixed(1) || '0.0' },
+    { label: 'Avg. Rating', value: Number(trainer.ratingAvg || 0).toFixed(2) },
   ];
 
   const currentReview = reviews[testimonialIndex];
@@ -179,7 +179,7 @@ const TrainerProfile = () => {
               {[...Array(5)].map((_, i) => (
                 <Star key={i} size={16} className={i < Math.round(trainer.ratingAvg || 0) ? 'fill-amber-400 text-amber-400' : 'fill-white/20 text-white/20'} />
               ))}
-              <span className="text-white/70 text-sm font-semibold">{trainer.ratingAvg?.toFixed(1) || '0.0'} • {reviews.length} reviews</span>
+              <span className="text-white/70 text-sm font-semibold">{Number(trainer.ratingAvg || 0).toFixed(2)} • {reviews.length} reviews</span>
             </div>
 
             <p className="text-white/70 text-sm leading-relaxed max-w-md mb-6">
